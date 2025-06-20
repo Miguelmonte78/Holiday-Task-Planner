@@ -8,7 +8,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Firebase CDN - using compat versions for global scope availability -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -97,7 +96,7 @@
     <div id="name-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50 hidden">
         <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm text-center">
             <h2 id="name-modal-title" class="text-2xl font-bold mb-6 text-slate-800">What is your name?</h2>
-            <p id="name-modal-description" class="mb-4 text-slate-600">Please enter your name from the family list to continue.</p>
+            <p id="name-modal-description" class="mb-4 text-slate-600">Please enter your name to continue.</p>
             <div class="mb-4">
                 <input type="text" id="family-name-input" placeholder="Your Name" class="w-full p-3 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500">
             </div>
@@ -440,11 +439,14 @@
         // Firebase related global variables from Canvas environment
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // initialAuthToken is no longer used as authentication is removed.
+        // const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         let db;
-        let auth;
-        let userId = 'anonymous'; // Default until authenticated (will be Firebase UID)
+        // auth is no longer needed as authentication is removed.
+        // let auth;
+        let userId = 'anonymous'; // Placeholder as real Firebase UID is not used for persistence path
+
 
         // Changed to window properties to avoid redeclaration errors in some environments
         window.taskDistributionChart = null; 
@@ -520,7 +522,7 @@
                 changeLogEntry: "{who} changed {taskType} on {date}: From {old} to {new}",
                 noHistory: "No change history available.",
                 nameModalTitle: "What is your name?",
-                nameModalDescription: "Please enter your name.",
+                nameModalDescription: "Please enter your name to continue.", // Updated translation
                 nameAuditInfo: "Your name will be used for audit purposes to show who made modifications in the system.",
                 shoppingCalcTitle: "Shopping Calculator",
                 addPurchaseTitle: "Add a New Purchase",
@@ -621,7 +623,7 @@
                 changeLogEntry: "{who} a modifié {taskType} le {date} : De {old} à {new}",
                 noHistory: "Aucun historique de modification disponible.",
                 nameModalTitle: "Quel est votre nom ?",
-                nameModalDescription: "Veuillez entrer votre nom.",
+                nameModalDescription: "Veuillez entrer votre nom.", // Updated translation
                 nameAuditInfo: "Votre nom sera utilisé à des fins d'audit pour indiquer qui a effectué des modifications dans le système.",
                 shoppingCalcTitle: "Calculateur de Courses",
                 addPurchaseTitle: "Ajouter un Nouvel Achat",
@@ -722,7 +724,7 @@
                 changeLogEntry: "{who} cambió {taskType} el {date} : De {old} a {new}",
                 noHistory: "No hay historial de cambios disponible.",
                 nameModalTitle: "Cuál es tu nombre?",
-                nameModalDescription: "Por favor, introduce tu nombre.",
+                nameModalDescription: "Por favor, introduce tu nombre.", // Updated translation
                 nameAuditInfo: "Tu nombre será usado para propósitos de auditoría para mostrar quién hizo modificaciones en el sistema.",
                 shoppingCalcTitle: "Calculadora de Compras",
                 addPurchaseTitle: "Añadir una Nueva Compra",
@@ -824,7 +826,7 @@
                 changeLogEntry: "{who} heeft {taskType} gewijzigd op {date} : Van {old} naar {new}",
                 noHistory: "Geen wijzigingsgeschiedenis beschikbaar.",
                 nameModalTitle: "Wat is uw naam?",
-                nameModalDescription: "Veuillez entrer votre naam.",
+                nameModalDescription: "Veuillez entrer votre naam.", // Updated translation
                 nameAuditInfo: "Votre naam zal worden gebruikt voor auditdoeleinden om aan te geven wie wijzigingen heeft aangebracht in het systeem.",
                 shoppingCalcTitle: "Boodschappencalculator",
                 addPurchaseTitle: "Nieuwe aankoop toevoegen",
@@ -977,42 +979,23 @@
             if (firebaseConfig) {
                 const app = firebase.initializeApp(firebaseConfig);
                 db = app.firestore(); 
-                auth = app.auth();    
 
-                try {
-                    if (!initialAuthToken) {
-                        await auth.signInAnonymously();
-                        console.log("Signed in anonymously to Firebase for data persistence.");
-                    } else {
-                        await auth.signInWithCustomToken(initialAuthToken);
-                        console.log("Signed in with custom token.");
-                    }
-                    userId = auth.currentUser.uid; // Set userId from Firebase UID
-                    console.log("Firebase User ID (UID) for persistence:", userId);
-
-                    // Load user name from local storage
-                    const storedName = localStorage.getItem('currentUserFamilyName');
-                    if (storedName) {
-                        currentUserFamilyName = storedName;
-                        updateGreetingDisplay();
-                        document.querySelector('main').classList.remove('hidden'); // Show main content
-                        loadingSpinner.classList.remove('hidden'); 
-                        fetchScheduleData(); // Start fetching data
-                    } else {
-                        // If no name found, show the name input modal
-                        loginTriggerButton.click(); // Programmatically click the login button
-                        document.querySelector('main').classList.add('hidden'); // Keep main content hidden
-                    }
-
-                } catch (error) {
-                    console.error("Firebase sign-in failed:", error);
-                    alert("Failed to connect to backend data. Some features may not work. Please try refreshing.");
-                    // Fallback to showing app but without data loading if Firebase fails completely
-                    document.querySelector('main').classList.remove('hidden');
-                    loadingSpinner.classList.add('hidden');
+                // Authentication removed, directly handle name from local storage or prompt
+                const storedName = localStorage.getItem('currentUserFamilyName');
+                if (storedName) {
+                    currentUserFamilyName = storedName;
+                    updateGreetingDisplay();
+                    document.querySelector('main').classList.remove('hidden'); // Show main content
+                    loadingSpinner.classList.remove('hidden'); 
+                    fetchScheduleData(); // Start fetching data
+                } else {
+                    // If no name found, show the name input modal
+                    loginTriggerButton.click(); // Programmatically click the login button
+                    document.querySelector('main').classList.add('hidden'); // Keep main content hidden
                 }
+
             } else {
-                console.warn("Firebase config not found. Running in local data mode (no persistence or auth).");
+                console.warn("Firebase config not found. Running in local data mode (no persistence).");
                 // In local mode, still use the name input flow for currentUserFamilyName
                 const storedName = localStorage.getItem('currentUserFamilyName');
                 if (storedName) {
@@ -1034,7 +1017,6 @@
         }
 
         // --- User Profile Management (Simplified for "no auth") ---
-        // No longer fetching/saving profile to Firestore for user's display name
         // Display name is now solely from localStorage / user input
         function updateGreetingDisplay() {
             greetingDisplay.textContent = getTranslation('helloGreeting').replace('{userName}', currentUserFamilyName);
