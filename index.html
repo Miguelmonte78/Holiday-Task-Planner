@@ -479,13 +479,13 @@
                 helpEditTitle: "Hoe taken bewerken",
                 helpEditDesc1: "Om te wijzigen wie aan een taak is toegewezen op een specifieke dag, selecteert u eerst de dag in de tijdlijn bovenaan de pagina. Zodra de taken van de dag worden weergegeven, klikt u op de knop <span class=\"font-bold\">Bewerken</span> naast de titel van de dag.",
                 helpEditDesc2: "Er verschijnt een pop-upvenster met vervolgkeuzemenu's voor elke taak. Selecteer de nieuwe familieleden voor elke rol. Merk op dat sommige vervolgkeuzemenu's meerdere selecties toestaan (bijv. Koken, Boodschappen), terwijl andere enkelvoudige selectie zijn (bijv. Volwassen Leider voor Dekken/Schoonmaken, Huis Schoonmaken). De beschikbare opties worden gefilterd op basis van de regels wie welke taak mag uitvoeren.",
-                helpEditDesc3: "Nadat u uw wijzigingen hebt aangebracht, klikt u op <span class=\"font-bold\">Wijzigingen opslaan</span>. De dagelijkse weergave en de grafiek <span class=\"font-bold\">Taakverdeling Volwassenen</span> worden automatisch bijgewerkt om uw wijzigingen weer te geven. Als u de wijzigingen wilt annuleren, klikt u op <span class=\"font-bold\">Annuleren</span>.",
+                helpEditDesc3: "Nadat u uw wijzigingen hebt aangebracht, klikt u op <span=\"font-bold\">Wijzigingen opslaan</span>. De dagelijkse weergave en de grafiek <span=\"font-bold\">Taakverdeling Volwassenen</span> worden automatisch bijgewerkt om uw wijzigingen weer te geven. Als u de wijzigingen wilt annuleren, klikt u op <span=\"font-bold\">Annuleren</span>.",
                 helpLangTitle: "Taalselectie",
                 helpLangDesc: "U kunt de taal van de applicatie wijzigen met behulp van het vervolgkeuzemenu in de rechterbovenhoek van de pagina. Selecteer uw voorkeurstaal (Engels, Frans, Spaans of Nederlands) en de hele interface, inclusief taaknamen en beschrijvingen, wordt direct bijgewerkt.",
                 helpAllocTitle: "Taaktoewijzing & Eerlijkheid",
                 helpAllocDesc1: "Deze planner heeft tot doel vakantietaken eerlijk te verdelen over alle volwassen familieleden. Het initiële schema is ontworpen om de werkdruk zo gelijkmatig mogelijk te verdelen, rekening houdend met specifieke individuele capaciteiten en beperkingen.",
                 allocRule1: "Volwassenen (ad): Miguel, Ankie, Juan, Marie, David, Mathilde, Eva kunnen algemene taken uitvoeren.",
-                allocRule2: "Kinderen (ch): Noah, Emma, Mathias, Florent kunnen helpen met het <span class=\"font-bold\">Tafel Dekken</span> en het <span class=\"font-bold\">Tafel Schoonmaken</span>, onder leiding van een toegewezen volwassene. Ze koken niet, doen geen boodschappen en maken het huis niet schoon.",
+                allocRule2: "Kinderen (ch): Noah, Emma, Mathias, Florent kunnen helpen met het <span=\"font-bold\">Tafel Dekken</span> en het <span=\"font-bold\">Tafel Schoonmaken</span>, onder leiding van een toegewezen volwassene. Ze koken niet, doen geen boodschappen en maken het huis niet schoon.",
                 allocRule3: "Specifieke Beperkingen:",
                 allocRule3a: "Geen specifieke beperkingen worden momenteel afgedwongen voor taaktoewijzing in de bewerkingsmodus, waardoor handmatige selectie van alle volwassenen voor alle taken mogelijk is.", 
                 allocRule3b: "", 
@@ -1174,9 +1174,15 @@
             dayData.shopping = getSelectedValues('edit-shopping', true);
 
             editModal.classList.add('hidden');
-            // Save schedule with the current dates
+            
+            // OPTIMISTIC UI UPDATE: Refresh UI immediately with the locally updated data
+            refreshUI(); 
+
+            // Then save the data to Firestore asynchronously
             saveScheduleData(scheduleData, new Date(startDatePicker.value), new Date(endDatePicker.value)); 
-            // UI refresh will be handled by onSnapshot listener after save
+            // The onSnapshot listener will still fire when Firestore confirms the save,
+            // which will call refreshUI again, but it should be a no-op visually
+            // if the data is already consistent.
         }
 
         function cancelEditChanges() {
