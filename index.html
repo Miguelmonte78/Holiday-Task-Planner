@@ -439,12 +439,10 @@
         // Firebase related global variables from Canvas environment
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        // initialAuthToken is no longer used as authentication is removed.
-        // const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // Authentication has been removed, so no Firebase Auth variables are needed.
 
         let db;
-        // auth is no longer needed as authentication is removed.
-        // let auth;
+        // let auth; // No longer needed
         let userId = 'anonymous'; // Placeholder as real Firebase UID is not used for persistence path
 
 
@@ -686,7 +684,7 @@
                 helpEditTitle: "Cómo editar tareas",
                 helpEditDesc1: "Para cambiar quién está asignado a una tarea en un día específico, primero selecciona el día en la línea de tiempo en la parte superior de la página. Una vez que se muestren las tareas del día, haz clic en el botón <span class=\"font-bold\">Editar</span> junto al título del día.",
                 helpEditDesc2: "Aparecerá una ventana emergente con menús desplegables para cada tarea. Selecciona a los nuevos miembros de la familia para cada rol. Ten en cuenta que algunos menús desplegables permiten múltiples selecciones (por ejemplo, Cocina, Compras), mientras que otros son de selección única (por ejemplo, Líder Adulto para Poner/Limpiar la Mesa, Limpieza de la Casa). Las opciones disponibles se filtran según las reglas de quién puede realizar cada tarea.",
-                helpEditDesc3: "Después de realizar tus cambios, haz clic en <span=\"font-bold\">Guardar cambios</span>. La vista diaria y el gráfico <span class=\"font-bold\">Distribución de Tareas</span> se actualizarán automáticamente para reflejar tus modificaciones. Si deseas descartar los cambios, haz clic en <span class=\"font-bold\">Cancelar</span>.",
+                helpEditDesc3: "Después de realizar tus cambios, haz clic en <span=\"font-bold\">Guardar cambios</span>. La vista diaria y el gráfico <span class=\"font-bold\">Distribución de Tareas</span> se actualizarán automáticamente para reflejar tus modificaciones. Si deseas descartar los cambios, haz clic en <span=\"font-bold\">Cancelar</span>.",
                 helpLangTitle: "Selección de Idioma",
                 helpLangDesc: "Puedes cambiar el idioma de la aplicación utilizando el menú desplegable ubicado en la esquina superior derecha de la página. Selecciona tu idioma preferido (inglés, francés, español u holandés) y toda la interfaz, incluyendo los nombres de las tareas y las descripciones, se actualizará instantáneamente.",
                 helpAllocTitle: "Asignación de Tareas y Equidad",
@@ -1047,6 +1045,7 @@
                 return null;
             }
             const scheduleId = 'main_holiday_schedule_v2'; 
+            // The path is now fixed to artifacts/{appId}/public/data/{collectionName} for public read/write
             return db.collection(`artifacts/${appId}/public/data/holiday_schedules`).doc(scheduleId);
         };
 
