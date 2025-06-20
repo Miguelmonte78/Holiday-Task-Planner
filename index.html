@@ -93,29 +93,17 @@
 </head>
 <body class="text-slate-800">
 
-    <!-- Login Modal -->
-    <div id="login-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50">
-        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm text-center">
-            <h2 class="text-2xl font-bold mb-6 text-slate-800">Login to Planner</h2>
-            <div class="mb-4">
-                <input type="text" id="username-input" placeholder="Username" class="w-full p-3 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500">
-            </div>
-            <div class="mb-6">
-                <input type="password" id="password-input" placeholder="Password" class="w-full p-3 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500">
-            </div>
-            <button id="login-button" class="w-full bg-teal-600 text-white p-3 rounded-md font-semibold hover:bg-teal-700 transition">Login</button>
-            <p id="login-error-message" class="text-red-500 text-sm mt-4 hidden"></p>
-        </div>
-    </div>
+    <!-- The login-modal HTML block has been removed -->
 
     <!-- Name Input Modal -->
     <div id="name-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50 hidden">
         <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm text-center">
-            <h2 class="text-2xl font-bold mb-6 text-slate-800">Enter Your Name</h2>
-            <p class="mb-4 text-slate-600">Please enter your name from the family list to continue.</p>
+            <h2 id="name-modal-title" class="text-2xl font-bold mb-6 text-slate-800">Enter Your Name</h2>
+            <p id="name-modal-description" class="mb-4 text-slate-600">Please enter your name from the family list to continue.</p>
             <div class="mb-4">
                 <input type="text" id="family-name-input" placeholder="Your Name" class="w-full p-3 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500">
             </div>
+            <p id="name-audit-info" class="mb-6 text-sm text-slate-500">Your name will be used for audit purposes to show who made modifications in the system.</p>
             <button id="save-name-button" class="w-full bg-teal-600 text-white p-3 rounded-md font-semibold hover:bg-teal-700 transition">Save Name</button>
             <p id="name-error-message" class="text-red-500 text-sm mt-4 hidden"></p>
         </div>
@@ -387,7 +375,10 @@
                 viewHistory: "View History",
                 historyModalTitle: "Task Change History",
                 changeLogEntry: "{who} changed {taskType} on {date}: From {old} to {new}",
-                noHistory: "No change history available."
+                noHistory: "No change history available.",
+                nameModalTitle: "What is your name?",
+                nameModalDescription: "Please enter your name from the family list to proceed.",
+                nameAuditInfo: "Your name will be used for audit purposes to show who made modifications in the system."
             },
             fr: {
                 title: "Planificateur de Vacances en Famille",
@@ -455,7 +446,10 @@
                 viewHistory: "Voir l'historique",
                 historyModalTitle: "Historique des modifications de tâches",
                 changeLogEntry: "{who} a modifié {taskType} le {date} : De {old} à {new}",
-                noHistory: "Aucun historique de modification disponible."
+                noHistory: "Aucun historique de modification disponible.",
+                nameModalTitle: "Quel est votre nom ?",
+                nameModalDescription: "Veuillez entrer votre nom parmi la liste des membres de la famille pour continuer.",
+                nameAuditInfo: "Votre nom sera utilisé à des fins d'audit pour indiquer qui a effectué des modifications dans le système."
             },
             es: {
                 title: "Planificador de Vacaciones Familiares",
@@ -591,7 +585,10 @@
                 viewHistory: "Bekijk geschiedenis",
                 historyModalTitle: "Taakwijzigingsgeschiedenis",
                 changeLogEntry: "{who} heeft {taskType} gewijzigd op {date} : Van {old} naar {new}",
-                noHistory: "Geen wijzigingsgeschiedenis beschikbaar."
+                noHistory: "Geen wijzigingsgeschiedenis beschikbaar.",
+                nameModalTitle: "Wat is uw naam?",
+                nameModalDescription: "Veuillez entrer votre nom parmi la liste des membres de la famille pour continuer.",
+                nameAuditInfo: "Votre nom sera utilisé à des fins d'audit pour indiquer qui a effectué des modifications dans le système."
             }
         };
 
@@ -618,15 +615,15 @@
         const historyModal = document.getElementById('history-modal');
         const closeHistoryBtn = document.getElementById('close-history-btn');
         const historyLogContent = document.getElementById('history-log-content');
-        const loginModal = document.getElementById('login-modal');
-        const usernameInput = document.getElementById('username-input');
-        const passwordInput = document.getElementById('password-input');
-        const loginButton = document.getElementById('login-button');
-        const loginErrorMessage = document.getElementById('login-error-message');
+        // Removed login-modal specific elements
         const nameModal = document.getElementById('name-modal');
         const familyNameInput = document.getElementById('family-name-input');
         const saveNameButton = document.getElementById('save-name-button');
         const nameErrorMessage = document.getElementById('name-error-message');
+        const nameModalTitle = document.getElementById('name-modal-title');
+        const nameModalDescription = document.getElementById('name-modal-description');
+        const nameAuditInfo = document.getElementById('name-audit-info');
+
 
         let taskDistributionChart = null;
         let currentLanguage = 'en'; // Default language
@@ -694,14 +691,14 @@
                     if (user) {
                         userId = user.uid;
                         userIdDisplay.textContent = `User ID: ${userId}`;
-                        // We do NOT hide the login modal here. That's for handleLogin()
-                        // or if the user profile is already set (meaning they logged in before).
                         await fetchUserProfile(userId); // Fetch profile to see if name is set
                     } else {
                         userId = 'anonymous'; // No authenticated user from Firebase (e.g., no initialAuthToken)
                         userIdDisplay.textContent = `User ID: Anonymous`;
-                        // Ensure login modal is visible if no user from Firebase and no custom login yet.
-                        // This state is fine; the custom login will handle showing the main app.
+                        // If no user, ensure name modal is shown (unless it's in local mode)
+                        if (!firebaseConfig) { // Only show for non-local mode when no user
+                            nameModal.classList.remove('hidden');
+                        }
                     }
                 });
 
@@ -713,19 +710,30 @@
                         console.log("Signed in anonymously to Firebase for data persistence.");
                     } catch (error) {
                         console.error("Firebase anonymous sign-in failed:", error);
-                        // This error indicates a deeper issue with Firebase setup or network.
-                        // The custom login won't fix this underlying Firebase connectivity problem.
+                    }
+                } else {
+                    // Use the provided initialAuthToken if available
+                    try {
+                        await auth.signInWithCustomToken(initialAuthToken);
+                        console.log("Signed in with custom token.");
+                    } catch (error) {
+                        console.error("Firebase custom token sign-in failed:", error);
+                        // Fallback to anonymous if custom token fails (e.g., expired, invalid)
+                        try {
+                             await auth.signInAnonymously();
+                             console.log("Failed custom token, signed in anonymously.");
+                        } catch (anonError) {
+                            console.error("Anonymous sign-in fallback also failed:", anonError);
+                        }
                     }
                 }
             } else {
                 console.warn("Firebase config not found. Running in local data mode (no persistence or auth).");
                 userIdDisplay.textContent = `User ID: Anonymous (Local)`;
-                loginModal.classList.add('hidden'); 
+                // In local mode, directly show the name modal or app if name is already set locally (not applicable here)
+                nameModal.classList.remove('hidden'); // In local mode, always prompt for name first
                 loadingSpinner.classList.add('hidden');
-                // In local mode, just start with default dates and blank schedule
-                scheduleData = createBlankScheduleData(defaultStartDate, defaultEndDate);
-                document.querySelector('main').classList.remove('hidden'); // Show main content for local mode
-                refreshUI();
+                // The main content will be shown by handleSaveName in local mode
             }
         }
 
@@ -738,20 +746,21 @@
                 if (doc.exists && doc.data().familyName) {
                     currentUserFamilyName = doc.data().familyName;
                     console.log("Fetched user family name:", currentUserFamilyName);
-                    // If family name exists, hide login/name modals and show main app
-                    loginModal.classList.add('hidden');
+                    // If family name exists, hide name modal and show main app
                     nameModal.classList.add('hidden');
                     document.querySelector('main').classList.remove('hidden');
-                    loadingSpinner.classList.remove('hidden'); // Show spinner while data loads
-                    fetchScheduleData(); // Start fetching data after successful auth and name lookup
+                    loadingSpinner.classList.remove('hidden'); // Hide spinner, data will load
+                    fetchScheduleData(); // Start fetching data after successful name lookup
                 } else {
                     currentUserFamilyName = ''; // No name found, user needs to enter it
-                    // Keep login modal visible or show name modal if login passed
+                    nameModal.classList.remove('hidden'); // Show name input modal
+                    loadingSpinner.classList.add('hidden'); // Hide spinner to allow interaction
                 }
             } catch (error) {
                 console.error("Error fetching user profile:", error);
                 currentUserFamilyName = '';
-                // If profile fetch fails, user still needs to go through name entry if logged in
+                nameModal.classList.remove('hidden'); // If error, still prompt for name
+                loadingSpinner.classList.add('hidden');
             }
         }
 
@@ -909,11 +918,8 @@
 
             assignTasksBtn.addEventListener('click', handleAssignTasks);
 
-            // Custom application login logic (not directly Firebase Auth calls)
-            loginButton.addEventListener('click', handleLogin);
+            // Removed loginButton event listener as login modal is gone
             saveNameButton.addEventListener('click', handleSaveName);
-            usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') loginButton.click(); });
-            passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') loginButton.click(); });
             familyNameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') saveNameButton.click(); });
 
 
@@ -929,45 +935,17 @@
 
             closeHistoryBtn.addEventListener('click', () => historyModal.classList.add('hidden'));
 
-            // IMPORTANT: Initialize Firebase, but do NOT automatically show the app content here.
-            // The visibility is controlled by the custom login flow.
+            // Initialize Firebase which will then check for user profile and show name modal if needed
             await initializeFirebase(); 
+
+            // Update name modal translations
+            nameModalTitle.textContent = getTranslation('nameModalTitle');
+            nameModalDescription.textContent = getTranslation('nameModalDescription');
+            nameAuditInfo.textContent = getTranslation('nameAuditInfo');
         });
 
-        // Custom application login logic (separate from Firebase Auth providers)
-        async function handleLogin() {
-            const username = usernameInput.value;
-            const password = passwordInput.value;
-            loginErrorMessage.classList.add('hidden'); 
-
-            if (username === 'GARSI' && password === 'Quiroga2025') {
-                // Custom login successful.
-                loginModal.classList.add('hidden'); // Hide the login modal
-
-                // Now, check if a Firebase user exists (it should, due to anonymous sign-in in initializeFirebase)
-                // or try to sign in anonymously if somehow not yet signed in.
-                if (auth.currentUser) {
-                    // Firebase user exists, proceed to name entry or main app
-                    await fetchUserProfile(auth.currentUser.uid); // This will then decide to show name modal or main app
-                } else {
-                    // This case should be rare if initializeFirebase succeeded, but as a fallback:
-                    try {
-                        await auth.signInAnonymously(); // Ensure a Firebase user context for Firestore
-                        await fetchUserProfile(auth.currentUser.uid); // And then proceed
-                        console.log("Forcing anonymous sign-in after custom login success.");
-                    } catch (error) {
-                        console.error("Failed to sign in anonymously after custom login:", error);
-                        loginErrorMessage.textContent = "An internal error occurred during setup. Please try again.";
-                        loginErrorMessage.classList.remove('hidden');
-                        loginModal.classList.remove('hidden'); // Show login modal again if Firebase fails
-                    }
-                }
-
-            } else {
-                loginErrorMessage.textContent = "Invalid username or password.";
-                loginErrorMessage.classList.remove('hidden');
-            }
-        }
+        // The handleLogin function is no longer needed as the login modal is removed.
+        // The name prompt and main app visibility are now controlled by fetchUserProfile.
 
         async function handleSaveName() {
             const enteredName = familyNameInput.value.trim();
@@ -975,8 +953,9 @@
 
             if (allFamilyMembers.includes(enteredName)) {
                 if (userId === 'anonymous') {
-                     // This indicates an issue where Firebase user ID isn't available after custom login.
-                    nameErrorMessage.textContent = "Authentication issue. Please try logging in again.";
+                     // This indicates an issue where Firebase user ID isn't available, but it should be after initializeFirebase.
+                     // A robust application might ask to reload or notify user of persistent storage issue.
+                    nameErrorMessage.textContent = "Authentication issue. Please try refreshing the page.";
                     nameErrorMessage.classList.remove('hidden');
                     return;
                 }
@@ -1032,7 +1011,7 @@
 
         function handleAssignTasks() {
             if (!currentUserFamilyName) {
-                alert("Please log in and set your family name to assign tasks.");
+                alert("Please enter your family name to assign tasks."); // Updated alert
                 return;
             }
 
@@ -1433,7 +1412,7 @@
 
         function openEditModal(dayIndex) {
             if (!currentUserFamilyName) {
-                alert("Please log in and set your family name to edit tasks.");
+                alert("Please enter your family name to edit tasks."); // Updated alert
                 return;
             }
             currentDayIndex = dayIndex;
@@ -1570,7 +1549,7 @@
 
         async function openHistoryModal() {
             if (!currentUserFamilyName) {
-                alert("Please log in to view history.");
+                alert("Please enter your family name to view history."); // Updated alert
                 return;
             }
 
