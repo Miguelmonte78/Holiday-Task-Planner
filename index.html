@@ -93,12 +93,10 @@
 </head>
 <body class="text-slate-800">
 
-    <!-- The login-modal HTML block has been removed -->
-
     <!-- Name Input Modal -->
     <div id="name-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50 hidden">
         <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm text-center">
-            <h2 id="name-modal-title" class="text-2xl font-bold mb-6 text-slate-800">Enter Your Name</h2>
+            <h2 id="name-modal-title" class="text-2xl font-bold mb-6 text-slate-800">What is your name?</h2>
             <p id="name-modal-description" class="mb-4 text-slate-600">Please enter your name from the family list to continue.</p>
             <div class="mb-4">
                 <input type="text" id="family-name-input" placeholder="Your Name" class="w-full p-3 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500">
@@ -143,6 +141,8 @@
                             <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 6.757 7.586 5.343 9z"/></svg>
                         </div>
                     </div>
+                     <!-- New Login Button -->
+                    <button id="login-trigger-button" class="px-4 py-2 bg-teal-600 text-white rounded-md font-semibold hover:bg-teal-700 transition shadow-sm ml-4">Login</button>
                 </div>
             </div>
             <p id="last-assignment-info" class="mt-4 text-sm text-slate-600"></p>
@@ -167,12 +167,13 @@
                 <div id="notes-container" class="mt-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-r-lg hidden">
                     <p><strong class="font-bold"><span id="notes-for-day-text">Notes for the day</span>:</strong> <span id="daily-notes"></span></p>
                 </div>
-                <div class="flex justify-center mt-6">
+                <div class="flex justify-center mt-6 space-x-4">
                     <button id="assign-tasks-btn" class="px-6 py-3 bg-teal-600 text-white rounded-full font-semibold hover:bg-teal-700 transition shadow-md">Assign Tasks Automatically</button>
+                    <button id="open-add-purchase-modal-btn" class="px-6 py-3 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 transition shadow-md">Add New Purchase</button>
                 </div>
             </section>
             
-            <section class="p-6 md:p-8 bg-white rounded-2xl shadow-lg">
+            <section class="p-6 md:p-8 bg-white rounded-2xl shadow-lg mb-8">
                  <h2 id="view-analyze-title" class="text-3xl font-bold mb-6 text-center text-slate-800">View & Analyze</h2>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     
@@ -196,6 +197,67 @@
                 </div>
             </section>
 
+            <!-- Shopping Calculator Module -->
+            <section id="shopping-calculator-section" class="p-6 md:p-8 bg-white rounded-2xl shadow-lg mb-8">
+                <h2 id="shopping-calc-title" class="text-3xl font-bold mb-6 text-center text-slate-800">Shopping Calculator</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <!-- Shopping Cost Chart -->
+                    <div>
+                        <h3 id="shopping-chart-title" class="text-xl font-bold mb-4 text-slate-700">Shopping Costs by Person</h3>
+                        <p id="shopping-chart-desc" class="text-slate-600 mb-4">This chart visualizes the total shopping amount spent by each family member.</p>
+                        <p id="shopping-calculation-explanation" class="text-sm text-slate-600 mb-4"></p>
+                        <div class="chart-container">
+                            <canvas id="shopping-cost-chart"></canvas>
+                        </div>
+                        <!-- New Category Pie Chart -->
+                        <h3 id="category-chart-title" class="text-xl font-bold mb-4 mt-8 text-slate-700">Spending by Category</h3>
+                        <p id="category-chart-desc" class="text-slate-600 mb-4">This chart shows the percentage distribution of your shopping expenses across different categories.</p>
+                        <div class="chart-container">
+                            <canvas id="category-pie-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Daily Shopping Overview Table -->
+                <h3 id="daily-shopping-table-title" class="text-xl font-bold mb-4 text-slate-700">Daily Shopping Overview</h3>
+                <div class="overflow-x-auto rounded-lg shadow-sm mb-8">
+                    <table class="min-w-full bg-white border border-slate-200">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 uppercase text-sm leading-normal">
+                                <th class="py-3 px-6 text-left">Date</th>
+                                <th class="py-3 px-6 text-left">Purchaser(s)</th>
+                                <th class="py-3 px-6 text-right">Amount (€)</th>
+                                <th class="py-3 px-6 text-left">Category</th> <!-- New column -->
+                                <th class="py-3 px-6 text-left">Added By</th> 
+                                <th class="py-3 px-6 text-center">Actions</th> <!-- New column for actions -->
+                            </tr>
+                        </thead>
+                        <tbody id="daily-shopping-table-body" class="text-slate-600 text-sm font-light">
+                            <!-- Daily shopping entries will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Shopping Cost Distribution Table -->
+                <h3 id="shopping-distribution-table-title" class="text-xl font-bold mb-4 text-slate-700">Shopping Cost Distribution</h3>
+                <p id="shopping-distribution-desc" class="text-slate-600 mb-4">This table calculates who owes whom to equalize shopping expenses among adults.</p>
+                <div class="overflow-x-auto rounded-lg shadow-sm">
+                    <table class="min-w-full bg-white border border-slate-200">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 uppercase text-sm leading-normal">
+                                <th class="py-3 px-6 text-left">Family Member</th>
+                                <th class="py-3 px-6 text-right">Total Spent (€)</th>
+                                <th class="py-3 px-6 text-right">Owe / Owed (€)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shopping-distribution-table-body" class="text-slate-600 text-sm font-light">
+                            <!-- Distribution results will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
         </main>
     </div>
 
@@ -212,6 +274,57 @@
             </div>
         </div>
     </div>
+
+    <!-- Add/Edit Purchase Modal HTML -->
+    <div id="add-purchase-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg p-6 md:p-8 w-full max-w-md shadow-xl">
+            <h3 id="add-purchase-modal-title" class="text-2xl font-bold mb-6 text-slate-800 text-center">Add a New Purchase</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="modal-purchase-date" class="block text-sm font-medium text-slate-700 mb-1">Purchase Date:</label>
+                    <input type="date" id="modal-purchase-date" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                </div>
+                <div>
+                    <label for="modal-purchase-amount" class="block text-sm font-medium text-slate-700 mb-1">Amount Spent (€):</label>
+                    <input type="number" id="modal-purchase-amount" step="0.01" min="0" placeholder="e.g., 25.50" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                </div>
+                <div>
+                    <label for="modal-purchase-category" class="block text-sm font-medium text-slate-700 mb-1">Category:</label>
+                    <select id="modal-purchase-category" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                        <option value="Daily Shopping">Daily Shopping</option>
+                        <option value="Drinks bar">Drinks bar</option>
+                        <option value="Presents">Presents</option>
+                        <option value="Restaurant">Restaurant</option>
+                        <option value="Activities">Activities</option>
+                        <option value="Others">Others</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="modal-purchase-by" class="block text-sm font-medium text-slate-700 mb-1">Purchased By:</label>
+                    <select multiple id="modal-purchase-by" class="w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 h-24">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+            </div>
+            <div class="mt-8 flex justify-end space-x-4">
+                <button id="cancel-add-purchase-btn" class="px-6 py-2 bg-slate-200 text-slate-700 rounded-full font-semibold hover:bg-slate-300 transition">Cancel</button>
+                <button id="modal-add-purchase-btn" class="px-6 py-2 bg-teal-600 text-white rounded-full font-semibold hover:bg-teal-700 transition">Add Purchase</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal for Delete -->
+    <div id="delete-confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg p-6 md:p-8 w-full max-w-sm text-center shadow-xl">
+            <h3 class="text-xl font-bold mb-4 text-slate-800">Confirm Deletion</h3>
+            <p class="text-slate-700 mb-6">Are you sure you want to delete this purchase record?</p>
+            <div class="flex justify-center space-x-4">
+                <button id="cancel-delete-btn" class="px-6 py-2 bg-slate-200 text-slate-700 rounded-full font-semibold hover:bg-slate-300 transition">Cancel</button>
+                <button id="confirm-delete-btn" class="px-6 py-2 bg-red-600 text-white rounded-full font-semibold hover:bg-red-700 transition">Delete</button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- History Log Modal HTML -->
     <div id="history-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
@@ -294,9 +407,36 @@
 
         const family = {
             adults: ["Miguel", "Ankie", "Juan", "Marie", "David", "Mathilde", "Eva"],
-            children: ["Noah", "Emma", "Mathias", "Florent"]
+            children: ["Noah", "Emma", "Mathias", "Florent"],
+            // Define households with a head and their unit count (adults + children in their 'household')
+            // This is an interpretation based on the example given (Juan 4 units, David 2 units, Eva 1 unit)
+            // The prompt says "Each person (adult or child) counts as one unit by default."
+            // Let's make an assumption for family groups for the purpose of this example:
+            // Group 1: Miguel, Ankie, Noah (3 units) - Head: Miguel
+            // Group 2: Juan, Marie, Emma, Mathias (4 units) - Head: Juan
+            // Group 3: David, Mathilde, Florent (3 units) - Head: David
+            // Group 4: Eva (1 unit) - Head: Eva
+            households: {
+                // Corrected family unit allocations as per user's request
+                "Miguel": { members: ["Miguel", "Ankie", "Noah", "Emma"], units: 4, familyName: "Family Miguel" },
+                "Juan": { members: ["Juan", "Marie", "Florent", "Mathias"], units: 4, familyName: "Family Juan" },
+                "David": { members: ["David", "Mathilde"], units: 2, familyName: "Family David" },
+                "Eva": { members: ["Eva"], units: 1, familyName: "Family Eva" }
+            },
+            // Map individual adults to their household head for reconciliation purposes
+            adultToHouseholdHead: {
+                "Miguel": "Miguel",
+                "Ankie": "Miguel",
+                "Juan": "Juan",
+                "Marie": "Juan",
+                "David": "David",
+                "Mathilde": "David",
+                "Eva": "Eva"
+            }
         };
         const allFamilyMembers = [...family.adults, ...family.children];
+        const householdHeads = Object.keys(family.households); // To filter reconciliation to only heads
+
 
         // Firebase related global variables from Canvas environment
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -306,6 +446,11 @@
         let db;
         let auth;
         let userId = 'anonymous'; // Default until authenticated
+
+        // Changed to window properties to avoid redeclaration errors in some environments
+        window.taskDistributionChart = null; 
+        window.shoppingCostChart = null; 
+        window.categoryPieChart = null; // New chart for categories
 
 
         const translations = {
@@ -327,7 +472,7 @@
                 showAll: "Show All",
                 noAssignedTasks: "has no assigned tasks.",
                 taskDistribution: "Task Distribution", // Updated
-                taskDistributionDescription: "This chart shows the total number of tasks assigned to each family member to ensure a fair distribution of work.", // Updated
+                taskDistributionDescription: "This chart shows the total number of tasks assigned to each individual family member to ensure a fair distribution of work.", // Updated
                 totalTasksAssigned: "Total Tasks Assigned",
                 editButton: "Edit",
                 editTasksFor: "Edit Tasks for",
@@ -347,7 +492,6 @@
                 allocRule2: "Children (ch): Noah, Emma, Mathias, Florent can assist with <span class=\"font-bold\">Dressing the Table</span> and <span class=\"font-bold\">Cleaning the Table</span> tasks, working under an assigned adult lead. They do not cook, shop, or do house cleaning.",
                 allocRule3: "Specific Restrictions:",
                 allocRule3a: "No specific restrictions are currently enforced for task assignment in the editing mode, allowing manual selection of all adults for all tasks.", 
-                allocRule3b: "", 
                 helpAllocDesc2: "The <span class=\"font-bold\">Task Distribution</span> chart in the \"View & Analyze\" section provides a visual overview of the total tasks assigned to each adult. Use this chart, along with the personal task viewer, to gauge the fairness of the distribution and make adjustments via the edit feature if needed.",
                 close: "Close",
                 days: {
@@ -378,7 +522,34 @@
                 noHistory: "No change history available.",
                 nameModalTitle: "What is your name?",
                 nameModalDescription: "Please enter your name from the family list to proceed.",
-                nameAuditInfo: "Your name will be used for audit purposes to show who made modifications in the system."
+                nameAuditInfo: "Your name will be used for audit purposes to show who made modifications in the system.",
+                shoppingCalcTitle: "Shopping Calculator",
+                addPurchaseTitle: "Add a New Purchase",
+                purchaseDate: "Purchase Date:",
+                amountSpent: "Amount Spent (€):",
+                purchasedBy: "Purchased By:",
+                addPurchase: "Add Purchase",
+                shoppingChartTitle: "Shopping Costs by Person",
+                shoppingChartDesc: "This chart visualizes the total shopping amount spent by each household head.",
+                shoppingCalcExplanation: "The 'Owe / Owed' amount in the chart and table is calculated by first determining the total holiday shopping expenses. This total is then divided by the sum of 'units' for all families (where each person, adult or child, counts as one unit) to find the 'fair share' cost per unit. For each family, their 'expected contribution' is calculated by multiplying their total units by this 'fair share' cost. The 'Owe / Owed' value represents the difference between a family's 'Total Spent' (actual contribution) and their 'expected contribution'. A positive value means the family has overpaid and is owed money, while a negative value means they have underpaid and owe money.",
+                dailyShoppingTableTitle: "Daily Shopping Overview",
+                dateCol: "Date",
+                purchasersCol: "Purchaser(s)",
+                amountCol: "Amount (€)",
+                categoryCol: "Category", // New translation key
+                addedByCol: "Added By",
+                actionsCol: "Actions", // New translation key
+                shoppingDistributionTableTitle: "Shopping Cost Distribution",
+                shoppingDistributionDesc: "This table calculates who owes whom to equalize shopping expenses among adults.",
+                familyMemberCol: "Family Member",
+                totalSpentCol: "Total Spent (€)",
+                oweOwedCol: "Owe / Owed (€)",
+                totalShoppingExpenses: "Total Shopping Expenses: ",
+                perPersonCost: "Cost per Person: ",
+                youOwe: "You owe ",
+                owesYou: " owes you",
+                categoryChartTitle: "Spending by Category", // New translation key
+                categoryChartDesc: "This chart shows the percentage distribution of your shopping expenses across different categories." // New translation key
             },
             fr: {
                 title: "Planificateur de Vacances en Famille",
@@ -398,7 +569,7 @@
                 showAll: "Afficher Tout",
                 noAssignedTasks: "n'a aucune tâche assignée.",
                 taskDistribution: "Répartition des Tâches", // Updated
-                taskDistributionDescription: "Ce graphique montre le nombre total de tâches assignées à chaque membre de la famille pour assurer une répartition équitable du travail.", // Updated
+                taskDistributionDescription: "Ce graphique montre le nombre total de tâches assignées à chaque membre individuel de la famille, assurant une répartition équitable du travail.", // Updated
                 totalTasksAssigned: "Total des Tâches Assignées",
                 editButton: "Modifier",
                 editTasksFor: "Modifier les tâches pour",
@@ -409,7 +580,7 @@
                 helpEditTitle: "Comment modifier les tâches",
                 helpEditDesc1: "Pour changer la personne affectée à une tâche un jour spécifique, sélectionnez d'abord le jour dans la chronologie en haut de la page. Une fois les tâches du jour affichées, cliquez sur le bouton <span class=\"font-bold\">Modifier</span> à côté du titre du jour.",
                 helpEditDesc2: "Une fenêtre contextuelle apparaîtra avec des menus déroulants pour chaque tâche. Sélectionnez les nouveaux membres de la famille pour chaque rôle. Notez que certains menus déroulants permettent plusieurs sélections (par exemple, Cuisine, Courses), tandis que d'autres sont à sélection unique (par exemple, Responsable Adulte pour Dressage/Nettoyage, Nettoyage de la Maison). Les options disponibles sont filtrées en fonction des règles d'attribution des tâches.",
-                helpEditDesc3: "Après avoir effectué vos modifications, cliquez sur <span class=\"font-bold\">Enregistrer les modifications</span>. La vue quotidienne et le graphique <span class=\"font-bold\">Répartition des Tâches</span> se mettront automatiquement à jour pour refléter vos modifications. Si vous souhaitez annuler les modifications, cliquez sur <span class=\"font-bold\">Annuler</span>.",
+                helpEditDesc3: "Après avoir effectué vos modifications, cliquez sur <span=\"font-bold\">Enregistrer les modifications</span>. La vue quotidienne et le graphique <span class=\"font-bold\">Répartition des Tâches</span> se mettront automatiquement à jour pour refléter vos modifications. Si vous souhaitez annuler les modifications, cliquez sur <span=\"font-bold\">Annuler</span>.",
                 helpLangTitle: "Sélection de la Langue",
                 helpLangDesc: "Vous pouvez changer la langue de l'application en utilisant le menu déroulant situé en haut à droite de la page. Sélectionnez votre langue préférée (anglais, français, espagnol ou néerlandais) et toute l'interface, y compris les noms des tâches et les descriptions, se mettra à jour instantanément.",
                 helpAllocTitle: "Attribution des Tâches & Équité",
@@ -418,7 +589,6 @@
                 allocRule2: "Enfants (ch) : Noah, Emma, Mathias, Florent peuvent aider aux tâches de <span class=\"font-bold\">Dresser la Table</span> et de <span class=\"font-bold\">Nettoyer la Table</span>, sous la direction d'un adulte assigné. Ils ne cuisinent pas, ne font pas les courses et ne nettoient pas la maison.",
                 allocRule3: "Restrictions Spécifiques :",
                 allocRule3a: "Aucune restriction spécifique n'est actuellement appliquée pour l'attribution des tâches en mode édition, permettant la sélection manuelle de tous les adultes pour toutes les tâches.", 
-                allocRule3b: "", 
                 helpAllocDesc2: "Le graphique <span class=\"font-bold\">Répartition des Tâches</span> dans la section \"Voir & Analyser\" fournit un aperçu visuel du total des tâches assignées à chaque adulte. Utilisez ce graphique, ainsi que le visualiseur de tâches personnelles, pour évaluer l'équité de la distribution et effectuer des ajustements via la fonction d'édition si nécessaire.",
                 close: "Fermer",
                 days: {
@@ -449,7 +619,34 @@
                 noHistory: "Aucun historique de modification disponible.",
                 nameModalTitle: "Quel est votre nom ?",
                 nameModalDescription: "Veuillez entrer votre nom parmi la liste des membres de la famille pour continuer.",
-                nameAuditInfo: "Votre nom sera utilisé à des fins d'audit pour indiquer qui a effectué des modifications dans le système."
+                nameAuditInfo: "Votre nom sera utilisé à des fins d'audit pour indiquer qui a effectué des modifications dans le système.",
+                shoppingCalcTitle: "Calculateur de Courses",
+                addPurchaseTitle: "Ajouter un Nouvel Achat",
+                purchaseDate: "Date d'achat :",
+                amountSpent: "Montant dépensé (€) :",
+                purchasedBy: "Acheté par :",
+                addPurchase: "Ajouter l'achat",
+                shoppingChartTitle: "Coûts des Courses par Personne",
+                shoppingChartDesc: "Ce graphique visualise le montant total des courses dépensé par chaque chef de famille.",
+                shoppingCalcExplanation: "Le montant 'Doit / Dû' dans le graphique et le tableau est calculé en déterminant d'abord le total des dépenses de vacances. Ce total est ensuite divisé par la somme des 'unités' pour toutes les familles (où chaque personne, adulte ou enfant, compte pour une unité) afin de trouver le 'coût équitable' par unité. Pour chaque famille, sa 'contribution attendue' est calculée en multipliant ses unités totales par ce 'coût équitable'. La valeur 'Doit / Dû' représente la différence entre le 'Total dépensé' (contribution réelle) d'une famille et sa 'contribution attendue'. Une valeur positive signifie que la famille a trop payé et qu'on lui doit de l'argent, tandis qu'une valeur négative signifie qu'elle a sous-payé et qu'elle doit de l'argent.",
+                dailyShoppingTableTitle: "Vue d'overview quotidienne des courses",
+                dateCol: "Date",
+                purchasersCol: "Acheteur(s)",
+                amountCol: "Montant (€)",
+                categoryCol: "Catégorie",
+                addedByCol: "Ajouté par",
+                actionsCol: "Actions",
+                shoppingDistributionTableTitle: "Répartition des Coûts des Courses",
+                shoppingDistributionDesc: "Ce tableau calcule qui doit à qui pour équilibrer les dépenses de courses entre adultes.",
+                familyMemberCol: "Membre de la famille",
+                totalSpentCol: "Total dépensé (€)",
+                oweOwedCol: "Doit / Dû (€)",
+                totalShoppingExpenses: "Total des dépenses de courses : ",
+                perPersonCost: "Coût par personne : ",
+                youOwe: "Vous devez ",
+                owesYou: " vous doit",
+                categoryChartTitle: "Dépenses par Catégorie",
+                categoryChartDesc: "Ce graphique montre la répartition en pourcentage de vos dépenses de courses par catégorie."
             },
             es: {
                 title: "Planificador de Vacaciones Familiares",
@@ -469,7 +666,7 @@
                 showAll: "Mostrar Todo",
                 noAssignedTasks: "no tiene tareas asignadas.",
                 taskDistribution: "Distribución de Tareas", // Updated
-                taskDistributionDescription: "Este gráfico muestra el número total de tareas asignadas a cada miembro de la familia para asegurar una distribución justa del trabajo.", // Updated
+                taskDistributionDescription: "Este gráfico muestra el número total de tareas asignadas a cada miembro individual de la familia, asegurando una distribución justa del trabajo.", // Updated
                 totalTasksAssigned: "Total de Tareas Asignadas",
                 editButton: "Editar",
                 editTasksFor: "Editar tareas para",
@@ -480,7 +677,7 @@
                 helpEditTitle: "Cómo editar tareas",
                 helpEditDesc1: "Para cambiar quién está asignado a una tarea en un día específico, primero selecciona el día en la línea de tiempo en la parte superior de la página. Una vez que se muestren las tareas del día, haz clic en el botón <span class=\"font-bold\">Editar</span> junto al título del día.",
                 helpEditDesc2: "Aparecerá una ventana emergente con menús desplegables para cada tarea. Selecciona a los nuevos miembros de la familia para cada rol. Ten en cuenta que algunos menús desplegables permiten múltiples selecciones (por ejemplo, Cocina, Compras), mientras que otros son de selección única (por ejemplo, Líder Adulto para Poner/Limpiar la Mesa, Limpieza de la Casa). Las opciones disponibles se filtran según las reglas de quién puede realizar cada tarea.",
-                helpEditDesc3: "Después de realizar tus cambios, haz clic en <span class=\"font-bold\">Guardar cambios</span>. La vista diaria y el gráfico <span class=\"font-bold\">Distribución de Tareas</span> se actualizarán automáticamente para reflejar tus modificaciones. Si deseas descartar los cambios, haz clic en <span class=\"font-bold\">Cancelar</span>.",
+                helpEditDesc3: "Después de realizar tus cambios, haz clic en <span=\"font-bold\">Guardar cambios</span>. La vista diaria y el gráfico <span class=\"font-bold\">Distribución de Tareas</span> se actualizarán automáticamente para reflejar tus modificaciones. Si deseas descartar los cambios, haz clic en <span class=\"font-bold\">Cancelar</span>.",
                 helpLangTitle: "Selección de Idioma",
                 helpLangDesc: "Puedes cambiar el idioma de la aplicación utilizando el menú desplegable ubicado en la esquina superior derecha de la página. Selecciona tu idioma preferido (inglés, francés, español u holandés) y toda la interfaz, incluyendo los nombres de las tareas y las descripciones, se actualizará instantáneamente.",
                 helpAllocTitle: "Asignación de Tareas y Equidad",
@@ -489,8 +686,7 @@
                 allocRule2: "Niños (ch): Noah, Emma, Mathias, Florent can assist with <span class=\"font-bold\">Poner la Mesa</span> y <span class=\"font-bold\">Limpiar la Mesa</span>, trabajando bajo la supervisión de un adulto asignado. No cocinan, no hacen compras ni limpian la casa.",
                 allocRule3: "Restricciones Específicas:",
                 allocRule3a: "Actualmente no se aplican restricciones específicas para la asignación de tareas en el modo de edición, lo que permite la selección manual de todos los adultos para todas las tareas.", 
-                allocRule3b: "", 
-                helpAllocDesc2: "El gráfico <span class=\"font-bold\">Distribución de Tareas</span> en la sección \"Ver y Analizar\" proporciona una visión general visual del total de tareas asignadas a cada adulto. Utiliza este gráfico, junto con el visor de tareas personales, para evaluar la equidad de la distribución y realizar ajustes a través de la función de edición si es necesario.",
+                helpAllocDesc2: "El gráfico <span=\"font-bold\">Distribución de Tareas</span> en la sección \"Ver y Analizar\" proporciona una visión general visual del total de tareas asignadas a cada adulto. Utiliza este gráfico, junto con el visor de tareas personales, para evaluar la equidad de la distribución y realizar ajustes a través de la función de edición si es necesario.",
                 close: "Cerrar",
                 days: {
                     "Tuesday": "Martes",
@@ -517,7 +713,37 @@
                 viewHistory: "Ver historial",
                 historyModalTitle: "Historial de cambios de tareas",
                 changeLogEntry: "{who} cambió {taskType} el {date} : De {old} a {new}",
-                noHistory: "No hay historial de cambios disponible."
+                noHistory: "No hay historial de cambios disponible.",
+                nameModalTitle: "Cuál es tu nombre?",
+                nameModalDescription: "Por favor, introduce tu nombre de la lista familiar para continuar.",
+                nameAuditInfo: "Tu nombre será usado para propósitos de auditoría para mostrar quién hizo modificaciones en el sistema.",
+                shoppingCalcTitle: "Calculadora de Compras",
+                addPurchaseTitle: "Añadir una Nueva Compra",
+                purchaseDate: "Fecha de compra:",
+                amountSpent: "Cantidad gastada (€):",
+                purchasedBy: "Comprado por:",
+                addPurchase: "Añadir compra",
+                shoppingChartTitle: "Costos de Compra por Persona",
+                shoppingChartDesc: "Este gráfico visualiza el monto total de las compras gastado par cada jefe de familia.",
+                shoppingCalcExplanation: "El monto 'Debe / Debe' en el gráfico y la tabla se calcula determinando primero el total de los gastos de vacaciones. Este total se divide luego por la suma de 'unidades' para todas las familias (donde cada persona, adulto o niño, cuenta como una unidad) para encontrar el 'costo justo' por unidad. Para cada familia, su 'contribución esperada' se calcula multiplicando sus unidades totales por este 'costo justo'. El valor 'Debe / Debe' representa la diferencia entre el 'Total gastado' (contribución real) de una familia y su 'contribución esperada'. Un valor positivo significa que la familia ha pagado de más y se le debe dinero, mientras que un valor negativo significa que ha pagado de menos y debe dinero.",
+                dailyShoppingTableTitle: "Resumen Diario de Compras",
+                dateCol: "Fecha",
+                purchasersCol: "Comprador(es)",
+                amountCol: "Cantidad (€)",
+                categoryCol: "Categoría",
+                addedByCol: "Añadido por",
+                actionsCol: "Acciones",
+                shoppingDistributionTableTitle: "Distribución de Costos de Compra",
+                shoppingDistributionDesc: "Esta tabla calcula quién debe a quién para igualar los gastos de compra entre adultos.",
+                familyMemberCol: "Miembro de la familia",
+                totalSpentCol: "Total gastado (€)",
+                oweOwedCol: "Debe / Debe (€)",
+                totalShoppingExpenses: "Gastos totales de compra: ",
+                perPersonCost: "Costo por persona: ",
+                youOwe: "Debes ",
+                owesYou: " te debe",
+                categoryChartTitle: "Gastos por Categoría",
+                categoryChartDesc: "Este gráfico muestra la distribución porcentual de tus gastos de compra por diferentes categorías."
             },
             nl: {
                 title: "Familie Vakantie Planner",
@@ -537,7 +763,7 @@
                 showAll: "Toon Alles",
                 noAssignedTasks: "heeft geen taken toegewezen.",
                 taskDistribution: "Taakverdeling", // Updated
-                taskDistributionDescription: "Deze grafiek toont het totale aantal taken dat aan elk familielid is toegewezen om een eerlijke verdeling van het werk te garanderen.", // Updated
+                taskDistributionDescription: "Deze grafiek toont het totale aantal taken dat aan elk individueel familielid is toegewezen, zodat het werk eerlijk wordt verdeeld.", // Updated
                 totalTasksAssigned: "Totaal Toegewezen Taken",
                 editButton: "Bewerken",
                 editTasksFor: "Taken bewerken voor",
@@ -558,7 +784,7 @@
                 allocRule3: "Specifieke Beperkingen:",
                 allocRule3a: "Geen specifieke beperkingen worden momenteel afgedwongen voor taaktoewijzing in de bewerkingsmodus, waardoor handmatige selectie van alle volwassenen voor alle taken mogelijk is.", 
                 allocRule3b: "", 
-                helpAllocDesc2: "De grafiek <span=\"font-bold\">Taakverdeling</span> in de sectie \"Bekijken & Analyseren\" geeft een visueel overzicht van het totale aantal taken dat aan elke volwassene is toegewezen. Gebruik deze grafiek, samen met de persoonlijke takenviewer, om de eerlijkheid van de verdeling te beoordelen en indien nodig aanpassingen te doen via de bewerkingsfunctie.",
+                helpAllocDesc2: "De grafiek <span=\"font-bold\">Taakverdeling</span> in de sectie \"Bekijken & Analyseren\" geeft een visueel overzicht van het totale aantal taken dat aan elk familielid is toegewezen. Gebruik deze grafiek, samen met de persoonlijke takenviewer, om de eerlijkheid van de verdeling te beoordelen en indien nodig aanpassingen te doen via de bewerkingsfunctie.",
                 close: "Sluiten",
                 days: {
                     "Tuesday": "Dinsdag",
@@ -588,7 +814,33 @@
                 noHistory: "Geen wijzigingsgeschiedenis beschikbaar.",
                 nameModalTitle: "Wat is uw naam?",
                 nameModalDescription: "Veuillez entrer votre nom parmi la liste des membres de la famille pour continuer.",
-                nameAuditInfo: "Votre nom sera utilisé à des fins d'audit pour indiquer qui a effectué des modifications dans le système."
+                nameAuditInfo: "Votre naam zal worden gebruikt voor auditdoeleinden om aan te geven wie wijzigingen heeft aangebracht in het systeem.",
+                shoppingCalcTitle: "Boodschappencalculator",
+                addPurchaseTitle: "Nieuwe aankoop toevoegen",
+                purchaseDate: "Aankoopdatum:",
+                amountSpent: "Besteed bedrag (€):",
+                purchasedBy: "Gekocht door:",
+                addPurchase: "Aankoop toevoegen",
+                shoppingChartTitle: "Boodschappenkosten per persoon",
+                shoppingChartDesc: "Deze grafiek visualiseert het totale bedrag aan boodschappen dat door elk familie is uitgegeven.",
+                dailyShoppingTableTitle: "Dagelijks Boodschappenoverzicht",
+                dateCol: "Datum",
+                purchasersCol: "Koper(s)",
+                amountCol: "Bedrag (€)",
+                categoryCol: "Categorie",
+                addedByCol: "Toegevoegd door",
+                actionsCol: "Acties",
+                shoppingDistributionTableTitle: "Boodschappenkostenverdeling",
+                shoppingDistributionDesc: "Deze tabel berekent wie wie wat verschuldigd is om de boodschappenkosten onder volwassenen gelijk te verdelen.",
+                familyMemberCol: "Familielid",
+                totalSpentCol: "Totaal besteed (€)",
+                oweOwedCol: "Verschuldigd (€)",
+                totalShoppingExpenses: "Totale boodschappenkosten: ",
+                perPersonCost: "Kosten per persoon: ",
+                youOwe: "U bent verschuldigd ",
+                owesYou: " is u verschuldigd",
+                categoryChartTitle: "Uitgaven per Categorie",
+                categoryChartDesc: "Deze grafiek toont de procentuele verdeling van uw boodschappenkosten over verschillende categorieën."
             }
         };
 
@@ -615,7 +867,6 @@
         const historyModal = document.getElementById('history-modal');
         const closeHistoryBtn = document.getElementById('close-history-btn');
         const historyLogContent = document.getElementById('history-log-content');
-        // Removed login-modal specific elements
         const nameModal = document.getElementById('name-modal');
         const familyNameInput = document.getElementById('family-name-input');
         const saveNameButton = document.getElementById('save-name-button');
@@ -623,9 +874,31 @@
         const nameModalTitle = document.getElementById('name-modal-title');
         const nameModalDescription = document.getElementById('name-modal-description');
         const nameAuditInfo = document.getElementById('name-audit-info');
+        const loginTriggerButton = document.getElementById('login-trigger-button'); // New login button
+
+        // Shopping Calculator elements
+        // Moved to modal for clarity
+        const openAddPurchaseModalBtn = document.getElementById('open-add-purchase-modal-btn'); // Button to open the new modal
+        const addPurchaseModal = document.getElementById('add-purchase-modal'); // The new purchase modal
+        const modalPurchaseDateInput = document.getElementById('modal-purchase-date');
+        const modalPurchaseAmountInput = document.getElementById('modal-purchase-amount');
+        const modalPurchaseCategorySelect = document.getElementById('modal-purchase-category'); // New category select in modal
+        const modalPurchaseBySelect = document.getElementById('modal-purchase-by');
+        const modalAddPurchaseBtn = document.getElementById('modal-add-purchase-btn');
+        const cancelAddPurchaseBtn = document.getElementById('cancel-add-purchase-btn');
+
+        const dailyShoppingTableBody = document.getElementById('daily-shopping-table-body');
+        const shoppingDistributionTableBody = document.getElementById('shopping-distribution-table-body');
+        const shoppingCostChartCanvas = document.getElementById('shopping-cost-chart');
+        const categoryPieChartCanvas = document.getElementById('category-pie-chart'); // New canvas for pie chart
+        const shoppingCalculationExplanationElement = document.getElementById('shopping-calculation-explanation'); // New element for explanation
+
+        // Delete confirmation modal elements
+        const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+        const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
 
 
-        let taskDistributionChart = null;
         let currentLanguage = 'en'; // Default language
         let currentDayIndex = 0; // To track the currently displayed day
 
@@ -650,7 +923,8 @@
                     cleaning: { adult: "", children: [] },
                     houseCleaning: "",
                     shopping: [],
-                    notes: ""
+                    notes: "",
+                    shoppingRecords: [] // Initialize new field for shopping costs
                 };
                 
                 days.push(dayEntry);
@@ -671,7 +945,8 @@
                     cleaning: JSON.parse(JSON.stringify(templateDay.cleaning)),
                     houseCleaning: JSON.parse(JSON.stringify(templateDay.houseCleaning)),
                     shopping: JSON.parse(JSON.stringify(templateDay.shopping)),
-                    notes: templateDay.notes ? JSON.parse(JSON.stringify(templateDay.notes)) : ""
+                    notes: templateDay.notes ? JSON.parse(JSON.stringify(templateDay.notes)) : "",
+                    shoppingRecords: JSON.parse(JSON.stringify(dayEntry.shoppingRecords || [])) // Preserve existing shopping records
                 };
                 assignedSchedule.push(newDayEntry);
             });
@@ -686,23 +961,24 @@
                 db = app.firestore(); 
                 auth = app.auth();    
 
-                // The onAuthStateChanged listener is still important for getting the Firebase User ID.
+                // The onAuthStateChanged listener is important for getting the Firebase User ID.
                 auth.onAuthStateChanged(async (user) => {
                     if (user) {
                         userId = user.uid;
                         userIdDisplay.textContent = `User ID: ${userId}`;
-                        await fetchUserProfile(userId); // Fetch profile to see if name is set
+                        await fetchUserProfile(userId); // Fetch profile to see if name is set and control UI visibility
                     } else {
-                        userId = 'anonymous'; // No authenticated user from Firebase (e.g., no initialAuthToken)
+                        // This case can happen if initialAuthToken is not provided by Canvas,
+                        // and signInAnonymously below has not completed yet.
+                        userId = 'anonymous'; 
                         userIdDisplay.textContent = `User ID: Anonymous`;
-                        // If no user, ensure name modal is shown (unless it's in local mode)
-                        if (!firebaseConfig) { // Only show for non-local mode when no user
-                            nameModal.classList.remove('hidden');
-                        }
+                        // Do not show name modal immediately here. It's triggered by the 'Login' button now.
+                        document.querySelector('main').classList.add('hidden'); // Ensure main content is hidden initially
+                        console.log("User not authenticated or profile not found. Main content hidden.");
                     }
                 });
 
-                // Attempt to sign in anonymously *only if no initial auth token is provided by the environment*.
+                // Attempt to sign in anonymously if no initial auth token is provided by the environment.
                 // This ensures a Firebase user is always available for Firestore operations when the app is running.
                 if (!initialAuthToken) {
                     try {
@@ -718,10 +994,9 @@
                         console.log("Signed in with custom token.");
                     } catch (error) {
                         console.error("Firebase custom token sign-in failed:", error);
-                        // Fallback to anonymous if custom token fails (e.g., expired, invalid)
                         try {
                              await auth.signInAnonymously();
-                             console.log("Failed custom token, signed in anonymously.");
+                             console.log("Failed custom token, signed in anonymously as fallback.");
                         } catch (anonError) {
                             console.error("Anonymous sign-in fallback also failed:", anonError);
                         }
@@ -730,10 +1005,9 @@
             } else {
                 console.warn("Firebase config not found. Running in local data mode (no persistence or auth).");
                 userIdDisplay.textContent = `User ID: Anonymous (Local)`;
-                // In local mode, directly show the name modal or app if name is already set locally (not applicable here)
-                nameModal.classList.remove('hidden'); // In local mode, always prompt for name first
+                // In local mode, main content is hidden until name is provided via the modal triggered by login button.
                 loadingSpinner.classList.add('hidden');
-                // The main content will be shown by handleSaveName in local mode
+                document.querySelector('main').classList.add('hidden');
             }
         }
 
@@ -746,21 +1020,26 @@
                 if (doc.exists && doc.data().familyName) {
                     currentUserFamilyName = doc.data().familyName;
                     console.log("Fetched user family name:", currentUserFamilyName);
-                    // If family name exists, hide name modal and show main app
-                    nameModal.classList.add('hidden');
-                    document.querySelector('main').classList.remove('hidden');
-                    loadingSpinner.classList.remove('hidden'); // Hide spinner, data will load
-                    fetchScheduleData(); // Start fetching data after successful name lookup
+                    nameModal.classList.add('hidden'); // Hide name modal if name is already set
+                    document.querySelector('main').classList.remove('hidden'); // Show main app content
+                    loadingSpinner.classList.remove('hidden'); 
+                    fetchScheduleData(); // Start fetching data
                 } else {
                     currentUserFamilyName = ''; // No name found, user needs to enter it
-                    nameModal.classList.remove('hidden'); // Show name input modal
-                    loadingSpinner.classList.add('hidden'); // Hide spinner to allow interaction
+                    console.log("User profile not found or family name not set.");
+                    // Do not auto-show nameModal here. It's triggered by loginTriggerButton.
+                    // Keep main hidden until name is provided.
                 }
             } catch (error) {
                 console.error("Error fetching user profile:", error);
                 currentUserFamilyName = '';
-                nameModal.classList.remove('hidden'); // If error, still prompt for name
-                loadingSpinner.classList.add('hidden');
+                // Error fetching profile, assume no name and keep main hidden.
+            } finally {
+                // No explicit nameModal.classList.remove('hidden') here in fetchUserProfile for the initial load.
+                // The main content's visibility is tied to currentUserFamilyName.
+                if (!currentUserFamilyName) {
+                    document.querySelector('main').classList.add('hidden');
+                }
             }
         }
 
@@ -816,7 +1095,6 @@
                 } else {
                     console.log("No schedule data in Firestore, initializing blank schedule.");
                     currentSchedule = createBlankScheduleData(defaultStartDate, defaultEndDate);
-                    // Do not auto-assign, let user click button
                     saveScheduleData(currentSchedule, defaultStartDate, defaultEndDate, '', '', []); 
                 }
                 
@@ -827,7 +1105,6 @@
                 defaultStartDate = fetchedStart;
                 defaultEndDate = fetchedEnd;
                 updateLastAssignmentInfo(currentLastAssignedBy, currentLastAssignedOn);
-                // History log is fetched but not immediately displayed, only when button is clicked
 
                 // Set picker values and refresh UI based on fetched/default dates
                 startDatePicker.value = defaultStartDate.toISOString().split('T')[0];
@@ -856,7 +1133,7 @@
                     endDate: currentEnd.toISOString().split('T')[0],      
                     lastAssignedBy: lastAssignedBy,
                     lastAssignedOn: lastAssignedOn,
-                    auditLog: auditLog // Save the entire audit log array
+                    auditLog: auditLog 
                 });
                 console.log("Schedule data saved to Firestore.");
             } catch (error) {
@@ -877,9 +1154,25 @@
 
         // Function to refresh all UI components after data change
         function refreshUI() {
-            updateAppDatesDisplay(); // Update dates display first
+            updateAppDatesDisplay(); 
+            shoppingCalculationExplanationElement.textContent = getTranslation('shoppingCalcExplanation');
 
-            // Ensure scheduleData has content before proceeding with display-related functions
+            // Only proceed if a user name is set
+            if (!currentUserFamilyName) {
+                document.querySelector('main').classList.add('hidden');
+                // Hide any generated content if user is not authenticated with a name
+                document.getElementById('task-grid').innerHTML = '';
+                document.getElementById('personal-task-list').innerHTML = '';
+                if (window.taskDistributionChart) { window.taskDistributionChart.destroy(); window.taskDistributionChart = null; }
+                if (window.shoppingCostChart) { window.shoppingCostChart.destroy(); window.shoppingCostChart = null; }
+                if (window.categoryPieChart) { window.categoryPieChart.destroy(); window.categoryPieChart = null; } // Destroy old chart
+                dailyShoppingTableBody.innerHTML = '';
+                shoppingDistributionTableBody.innerHTML = '';
+                return;
+            } else {
+                document.querySelector('main').classList.remove('hidden'); // Show main content
+            }
+
             if (scheduleData.length === 0) {
                 document.getElementById('task-grid').innerHTML = '<p class="text-center text-slate-500">No schedule data available for these dates. Click "Assign Tasks Automatically" to generate a new schedule.</p>';
                 document.getElementById('personal-task-list').innerHTML = '<p class="text-slate-500 text-center">No tasks to display.</p>';
@@ -888,40 +1181,50 @@
                     dailyViewTitleElement.innerHTML = `${getTranslation('selectDay')}`; 
                 }
                 daySelector.innerHTML = ''; 
-                if (taskDistributionChart) {
-                    taskDistributionChart.destroy(); 
-                    taskDistributionChart = null; 
-                }
+                if (window.taskDistributionChart) { window.taskDistributionChart.destroy(); window.taskDistributionChart = null; }
+                if (window.shoppingCostChart) { window.shoppingCostChart.destroy(); window.shoppingCostChart = null; }
+                if (window.categoryPieChart) { window.categoryPieChart.destroy(); window.categoryPieChart = null; } // Destroy old chart
+                dailyShoppingTableBody.innerHTML = '';
+                shoppingDistributionTableBody.innerHTML = '';
                 return; 
             }
 
-            // Ensure currentDayIndex is within bounds after potential scheduleData changes
             if (currentDayIndex >= scheduleData.length) {
-                currentDayIndex = 0; // Reset to first day if out of bounds
+                currentDayIndex = 0; 
             }
 
             populateDaySelector();
             populatePersonFilter(); 
             displayDay(currentDayIndex); 
-            displayPersonalTasks(personFilter.value); 
+            displayPersonalTasks(personFilter.value); // Re-display personal tasks after any data change
             createTaskDistributionChart(); 
+            // populatePurchaseBySelect(); // Now called when modal opens
+            renderShoppingSummaryTables(); // Render shopping tables
+            createShoppingCostChart(); // Render shopping chart
+            createCategoryPieChart(); // Render the new category pie chart
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
-            // Initialize date pickers with default dates
             startDatePicker.value = defaultStartDate.toISOString().split('T')[0];
             endDatePicker.value = defaultEndDate.toISOString().split('T')[0];
 
-            // Add event listeners for date changes
             startDatePicker.addEventListener('change', handleDateChange);
             endDatePicker.addEventListener('change', handleDateChange);
-
             assignTasksBtn.addEventListener('click', handleAssignTasks);
+            
+            // "See Your Personal Tasks" refresh on name selection
+            personFilter.addEventListener('change', (e) => {
+                displayPersonalTasks(e.target.value);
+            });
 
-            // Removed loginButton event listener as login modal is gone
+            // Login Trigger Button Event Listener
+            loginTriggerButton.addEventListener('click', () => {
+                nameModal.classList.remove('hidden');
+                familyNameInput.focus();
+            });
+
             saveNameButton.addEventListener('click', handleSaveName);
             familyNameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') saveNameButton.click(); });
-
 
             languageSelector.addEventListener('change', (e) => {
                 updateLanguage(e.target.value);
@@ -935,17 +1238,46 @@
 
             closeHistoryBtn.addEventListener('click', () => historyModal.classList.add('hidden'));
 
-            // Initialize Firebase which will then check for user profile and show name modal if needed
+            // Shopping Calculator new modal event listeners
+            openAddPurchaseModalBtn.addEventListener('click', () => {
+                modalPurchaseDateInput.value = new Date().toISOString().split('T')[0]; // Set default date
+                modalPurchaseAmountInput.value = ''; // Clear amount
+                modalPurchaseCategorySelect.value = 'Daily Shopping'; // Reset category
+                populatePurchaseBySelect(true); // Populate with modal specific element, auto-select current user
+                modalAddPurchaseBtn.textContent = getTranslation('addPurchase'); // Ensure button says "Add Purchase"
+                modalAddPurchaseBtn.onclick = handleAddPurchase; // Set click handler for add
+                addPurchaseModal.classList.remove('hidden');
+            });
+            // modalAddPurchaseBtn.addEventListener('click', handleAddPurchase); // Listener moved to click handler above for dynamic change
+            cancelAddPurchaseBtn.addEventListener('click', () => {
+                addPurchaseModal.classList.add('hidden');
+            });
+
+            // Delete confirmation modal listeners
+            cancelDeleteBtn.addEventListener('click', () => {
+                deleteConfirmModal.classList.add('hidden');
+                confirmDeleteBtn.dataset.dayIndex = ''; // Clear stored data
+                confirmDeleteBtn.dataset.recordIndex = '';
+            });
+            // confirmDeleteBtn.addEventListener('click', handleConfirmDelete); // Attached dynamically in openDeleteConfirmModal
+
+
             await initializeFirebase(); 
 
             // Update name modal translations
             nameModalTitle.textContent = getTranslation('nameModalTitle');
             nameModalDescription.textContent = getTranslation('nameModalDescription');
             nameAuditInfo.textContent = getTranslation('nameAuditInfo');
-        });
 
-        // The handleLogin function is no longer needed as the login modal is removed.
-        // The name prompt and main app visibility are now controlled by fetchUserProfile.
+            // Set default date for purchase date input to today
+            // purchaseDateInput.value = new Date().toISOString().split('T')[0]; // This is now modal-specific
+            
+            // Initial state: hide main content if no family name is set yet.
+            // fetchUserProfile will handle showing it after name confirmation.
+            if (!currentUserFamilyName) {
+                document.querySelector('main').classList.add('hidden');
+            }
+        });
 
         async function handleSaveName() {
             const enteredName = familyNameInput.value.trim();
@@ -953,17 +1285,16 @@
 
             if (allFamilyMembers.includes(enteredName)) {
                 if (userId === 'anonymous') {
-                     // This indicates an issue where Firebase user ID isn't available, but it should be after initializeFirebase.
-                     // A robust application might ask to reload or notify user of persistent storage issue.
                     nameErrorMessage.textContent = "Authentication issue. Please try refreshing the page.";
                     nameErrorMessage.classList.remove('hidden');
                     return;
                 }
                 await saveUserProfile(userId, enteredName);
+                currentUserFamilyName = enteredName; // Ensure this is updated after successful save
                 nameModal.classList.add('hidden');
                 document.querySelector('main').classList.remove('hidden'); // Show the main app content
                 loadingSpinner.classList.remove('hidden'); 
-                fetchScheduleData(); // Now that name is set, fetch real app data
+                fetchScheduleData(); 
             } else {
                 nameErrorMessage.textContent = "Name does not match any family member. Please try again.";
                 nameErrorMessage.classList.remove('hidden');
@@ -1011,7 +1342,8 @@
 
         function handleAssignTasks() {
             if (!currentUserFamilyName) {
-                alert("Please enter your family name to assign tasks."); // Updated alert
+                nameModal.classList.remove('hidden');
+                familyNameInput.focus();
                 return;
             }
 
@@ -1037,11 +1369,642 @@
             // UI refresh is handled by onSnapshot
         }
 
+        // --- Shopping Calculator Logic ---
+        function populatePurchaseBySelect(isModal = false) {
+            const targetSelect = isModal ? modalPurchaseBySelect : purchaseBySelect;
+            targetSelect.innerHTML = '';
+            let eligiblePurchasers = [];
+
+            // Determine if the current user is a household head
+            const isCurrentUserHead = householdHeads.includes(currentUserFamilyName);
+
+            if (isCurrentUserHead) {
+                // If current user is a household head, they can record purchases for:
+                // 1. All adults in their own household
+                // 2. Eva (regardless of household)
+                const userHouseholdMembers = family.households[currentUserFamilyName] ? family.households[currentUserFamilyName].members : [];
+                eligiblePurchasers = userHouseholdMembers.filter(member => family.adults.includes(member));
+                if (!eligiblePurchasers.includes("Eva")) { // Add Eva if not already present
+                    eligiblePurchasers.push("Eva");
+                }
+            } else if (family.adults.includes(currentUserFamilyName)) {
+                // If current user is an adult but not a household head, they can only record for themselves
+                eligiblePurchasers = [currentUserFamilyName];
+            } else {
+                // Children cannot record purchases
+                eligiblePurchasers = [];
+            }
+            
+            eligiblePurchasers.sort().forEach(person => {
+                const option = document.createElement('option');
+                option.value = person;
+                option.textContent = person;
+                targetSelect.appendChild(option);
+            });
+
+            // Automatically select the current logged-in user if they are among the eligible purchasers
+            if (eligiblePurchasers.includes(currentUserFamilyName)) {
+                Array.from(targetSelect.options).forEach(option => {
+                    option.selected = (option.value === currentUserFamilyName);
+                });
+            } else {
+                Array.from(targetSelect.options).forEach(option => option.selected = false);
+            }
+        }
+
+        function handleAddPurchase() {
+            if (!currentUserFamilyName) {
+                nameModal.classList.remove('hidden');
+                familyNameInput.focus();
+                return;
+            }
+
+            const purchaseDateStr = modalPurchaseDateInput.value;
+            const purchaseAmount = parseFloat(modalPurchaseAmountInput.value);
+            const purchaseCategory = modalPurchaseCategorySelect.value; // Get the selected category
+            const purchasedBy = Array.from(modalPurchaseBySelect.selectedOptions).map(option => option.value);
+
+            if (!purchaseDateStr || isNaN(purchaseAmount) || purchaseAmount <= 0 || purchasedBy.length === 0 || !purchaseCategory) {
+                alert("Please enter a valid date, amount, select a category, and select at least one purchaser.");
+                return;
+            }
+
+            // Validation for eligible purchasers
+            const isCurrentUserHead = householdHeads.includes(currentUserFamilyName);
+            let allowedPurchasers = [];
+
+            if (isCurrentUserHead) {
+                allowedPurchasers = family.households[currentUserFamilyName].members.filter(member => family.adults.includes(member));
+                if (!allowedPurchasers.includes("Eva")) {
+                    allowedPurchasers.push("Eva");
+                }
+            } else if (family.adults.includes(currentUserFamilyName)) {
+                allowedPurchasers = [currentUserFamilyName];
+            }
+
+            const unauthorizedPurchases = purchasedBy.filter(p => !allowedPurchasers.includes(p));
+
+            if (unauthorizedPurchases.length > 0) {
+                const allowedNames = allowedPurchasers.join(', ');
+                alert(`You can only record purchases for yourself${isCurrentUserHead ? `, members of your family (${allowedNames.replace('Eva, ', '').replace(', Eva', '')})` : ''}${allowedPurchasers.includes("Eva") && currentUserFamilyName !== "Eva" ? ' or Eva' : ''}. You cannot record purchases for: ${unauthorizedPurchases.join(', ')}.`);
+                return;
+            }
+
+
+            const purchaseDateObj = new Date(purchaseDateStr);
+            purchaseDateObj.setUTCHours(0, 0, 0, 0); // Normalize date
+
+            const holidayStartDate = new Date(defaultStartDate);
+            holidayStartDate.setUTCHours(0,0,0,0);
+            const holidayEndDate = new Date(defaultEndDate);
+            holidayEndDate.setUTCHours(0,0,0,0);
+
+            if (purchaseDateObj.getTime() < holidayStartDate.getTime() || purchaseDateObj.getTime() > holidayEndDate.getTime()) {
+                alert(`The selected purchase date (${purchaseDateStr}) is outside the current holiday period (${startDatePicker.value} to ${endDatePicker.value}). Please adjust your selection.`);
+                return;
+            }
+
+            const foundDayIndex = scheduleData.findIndex(day => {
+                const dayDateObj = new Date(day.date);
+                dayDateObj.setUTCHours(0, 0, 0, 0);
+                return dayDateObj.getTime() === purchaseDateObj.getTime();
+            });
+
+            if (foundDayIndex === -1) {
+                // This case should ideally be caught by the date range check above,
+                // but as a fallback, if a date within range isn't found in scheduleData (e.g. empty scheduleData)
+                alert("Could not find the corresponding day in the schedule for the selected purchase date. Please ensure the holiday schedule is generated or try a different date.");
+                return;
+            }
+
+            const newRecord = {
+                purchaser: purchasedBy.join(', '), // Store as comma-separated string for simplicity
+                amount: purchaseAmount,
+                category: purchaseCategory, // Store the selected category
+                timestamp: new Date().toISOString(),
+                addedBy: currentUserFamilyName // Stored the logged-in user's name
+            };
+
+            scheduleData[foundDayIndex].shoppingRecords.push(newRecord);
+            
+            // Clear form and save data
+            modalPurchaseDateInput.value = new Date().toISOString().split('T')[0];
+            modalPurchaseAmountInput.value = '';
+            modalPurchaseCategorySelect.value = 'Daily Shopping'; // Reset to default category
+            Array.from(modalPurchaseBySelect.options).forEach(option => option.selected = false);
+            populatePurchaseBySelect(true); // Call for modal to re-select current user
+
+            addPurchaseModal.classList.add('hidden'); // Close the modal
+            
+            saveScheduleData(scheduleData, defaultStartDate, defaultEndDate, lastAssignmentInfo.dataset.lastAssignedBy || '', lastAssignmentInfo.dataset.lastAssignedOn || '', []); // Update audit log (though not strictly for purchases)
+            // refreshUI will be called by onSnapshot listener after save
+        }
+
+        function openEditPurchaseModal(dayIndex, recordIndex) {
+            const dayRecord = scheduleData[dayIndex];
+            const record = dayRecord.shoppingRecords[recordIndex];
+
+            // Set modal title for editing
+            document.getElementById('add-purchase-modal-title').textContent = `Edit Purchase on ${dayRecord.date}`;
+            modalAddPurchaseBtn.textContent = 'Save Changes';
+            modalAddPurchaseBtn.onclick = () => saveEditedPurchase(dayIndex, recordIndex);
+
+            modalPurchaseDateInput.value = new Date(record.timestamp).toISOString().split('T')[0]; // Use record's date or inferred date
+            modalPurchaseAmountInput.value = record.amount;
+            modalPurchaseCategorySelect.value = record.category || 'Others';
+
+            populatePurchaseBySelect(true); // Populate with all eligible options
+            const purchasers = record.purchaser.split(', ').map(p => p.trim());
+            Array.from(modalPurchaseBySelect.options).forEach(option => {
+                option.selected = purchasers.includes(option.value);
+            });
+
+            addPurchaseModal.classList.remove('hidden');
+        }
+
+        async function saveEditedPurchase(dayIndex, recordIndex) {
+            const dayRecord = scheduleData[dayIndex];
+            const oldRecord = JSON.parse(JSON.stringify(dayRecord.shoppingRecords[recordIndex])); // Deep copy for audit
+
+            const purchaseDateStr = modalPurchaseDateInput.value;
+            const purchaseAmount = parseFloat(modalPurchaseAmountInput.value);
+            const purchaseCategory = modalPurchaseCategorySelect.value;
+            const purchasedBy = Array.from(modalPurchaseBySelect.selectedOptions).map(option => option.value);
+
+            if (!purchaseDateStr || isNaN(purchaseAmount) || purchaseAmount <= 0 || purchasedBy.length === 0 || !purchaseCategory) {
+                alert("Please enter a valid date, amount, select a category, and select at least one purchaser.");
+                return;
+            }
+
+            // Validate that the selected purchasers are indeed eligible for the current user (same logic as add)
+            const isCurrentUserHead = householdHeads.includes(currentUserFamilyName);
+            let allowedPurchasers = [];
+
+            if (isCurrentUserHead) {
+                allowedPurchasers = family.households[currentUserFamilyName].members.filter(member => family.adults.includes(member));
+                if (!allowedPurchasers.includes("Eva")) {
+                    allowedPurchasers.push("Eva");
+                }
+            } else if (family.adults.includes(currentUserFamilyName)) {
+                allowedPurchasers = [currentUserFamilyName];
+            }
+
+            const unauthorizedPurchases = purchasedBy.filter(p => !allowedPurchasers.includes(p));
+
+            if (unauthorizedPurchases.length > 0) {
+                const allowedNames = allowedPurchasers.join(', ');
+                alert(`You can only record purchases for yourself${isCurrentUserHead ? `, members of your family (${allowedNames.replace('Eva, ', '').replace(', Eva', '')})` : ''}${allowedPurchasers.includes("Eva") && currentUserFamilyName !== "Eva" ? ' or Eva' : ''}. You cannot record purchases for: ${unauthorizedPurchases.join(', ')}.`);
+                return;
+            }
+
+            const purchaseDateObj = new Date(purchaseDateStr);
+            purchaseDateObj.setUTCHours(0, 0, 0, 0);
+
+            const holidayStartDate = new Date(defaultStartDate);
+            holidayStartDate.setUTCHours(0,0,0,0);
+            const holidayEndDate = new Date(defaultEndDate);
+            holidayEndDate.setUTCHours(0,0,0,0);
+
+            if (purchaseDateObj.getTime() < holidayStartDate.getTime() || purchaseDateObj.getTime() > holidayEndDate.getTime()) {
+                alert(`The selected purchase date (${purchaseDateStr}) is outside the current holiday period (${startDatePicker.value} to ${endDatePicker.value}). Please adjust your selection.`);
+                return;
+            }
+
+
+            const updatedRecord = {
+                purchaser: purchasedBy.join(', '),
+                amount: purchaseAmount,
+                category: purchaseCategory,
+                timestamp: new Date().toISOString(), // Update timestamp for modification
+                addedBy: currentUserFamilyName // Keep original addedBy or update to current user if desired
+            };
+
+            // Update the record in scheduleData
+            dayRecord.shoppingRecords[recordIndex] = updatedRecord;
+
+            // Log the change
+            const docRef = getScheduleDocRef();
+            let currentAuditLog = [];
+            if (docRef) {
+                try {
+                    const docSnap = await docRef.get();
+                    if (docSnap.exists) {
+                        currentAuditLog = docSnap.data().auditLog || [];
+                    }
+                } catch (error) {
+                    console.error("Error fetching audit log for purchase edit:", error);
+                }
+            }
+
+            currentAuditLog.unshift({
+                changedBy: currentUserFamilyName,
+                timestamp: new Date().toISOString(),
+                dayDate: dayRecord.date,
+                taskType: 'Purchase',
+                oldValue: JSON.stringify(oldRecord),
+                newValue: JSON.stringify(updatedRecord)
+            });
+
+            addPurchaseModal.classList.add('hidden');
+            saveScheduleData(scheduleData, defaultStartDate, defaultEndDate, lastAssignmentInfo.dataset.lastAssignedBy || '', lastAssignmentInfo.dataset.lastAssignedOn || '', currentAuditLog);
+        }
+
+        function openDeleteConfirmModal(dayIndex, recordIndex) {
+            deleteConfirmModal.classList.remove('hidden');
+            // Store indices in the confirm button's dataset for access in handler
+            confirmDeleteBtn.dataset.dayIndex = dayIndex;
+            confirmDeleteBtn.dataset.recordIndex = recordIndex;
+            // Attach the handler here to ensure it's fresh and uses current data
+            confirmDeleteBtn.onclick = handleDeleteConfirmed;
+        }
+
+        async function handleDeleteConfirmed() {
+            const dayIndex = parseInt(confirmDeleteBtn.dataset.dayIndex);
+            const recordIndex = parseInt(confirmDeleteBtn.dataset.recordIndex);
+
+            if (isNaN(dayIndex) || isNaN(recordIndex)) {
+                console.error("Invalid indices for deletion.");
+                deleteConfirmModal.classList.add('hidden');
+                return;
+            }
+
+            const dayRecord = scheduleData[dayIndex];
+            const deletedRecord = JSON.parse(JSON.stringify(dayRecord.shoppingRecords[recordIndex])); // Deep copy for audit
+
+            dayRecord.shoppingRecords.splice(recordIndex, 1);
+
+            // Log the deletion
+            const docRef = getScheduleDocRef();
+            let currentAuditLog = [];
+            if (docRef) {
+                try {
+                    const docSnap = await docRef.get();
+                    if (docSnap.exists) {
+                        currentAuditLog = docSnap.data().auditLog || [];
+                    }
+                } catch (error) {
+                    console.error("Error fetching audit log for purchase deletion:", error);
+                }
+            }
+
+            currentAuditLog.unshift({
+                changedBy: currentUserFamilyName,
+                timestamp: new Date().toISOString(),
+                dayDate: dayRecord.date,
+                taskType: 'Purchase Deletion',
+                oldValue: JSON.stringify(deletedRecord),
+                newValue: 'DELETED'
+            });
+
+            deleteConfirmModal.classList.add('hidden');
+            saveScheduleData(scheduleData, defaultStartDate, defaultEndDate, lastAssignmentInfo.dataset.lastAssignedBy || '', lastAssignmentInfo.dataset.lastAssignedOn || '', currentAuditLog);
+        }
+
+
+        function renderShoppingSummaryTables() {
+            let totalShoppingSpent = 0;
+            // Initialize total spending for each household head
+            const householdSpending = {}; 
+            householdHeads.forEach(head => householdSpending[head] = 0);
+
+            dailyShoppingTableBody.innerHTML = '';
+
+            scheduleData.forEach((day, dayIndex) => {
+                day.shoppingRecords.forEach((record, recordIndex) => {
+                    const row = dailyShoppingTableBody.insertRow();
+                    row.className = 'border-b border-slate-200 hover:bg-slate-50';
+                    row.innerHTML = `
+                        <td class="py-3 px-6 text-left whitespace-nowrap">${day.date}</td>
+                        <td class="py-3 px-6 text-left">${record.purchaser}</td>
+                        <td class="py-3 px-6 text-right">${record.amount.toFixed(2)}</td>
+                        <td class="py-3 px-6 text-left">${record.category || 'N/A'}</td>
+                        <td class="py-3 px-6 text-left">${record.addedBy || 'N/A'}</td>
+                        <td class="py-3 px-6 text-center">
+                            <button class="text-blue-500 hover:text-blue-700 font-semibold text-sm mr-2" 
+                                onclick="openEditPurchaseModal(${dayIndex}, ${recordIndex})">Edit</button>
+                            <button class="text-red-500 hover:text-red-700 font-semibold text-sm" 
+                                onclick="openDeleteConfirmModal(${dayIndex}, ${recordIndex})">Delete</button>
+                        </td>
+                    `;
+                    totalShoppingSpent += record.amount;
+
+                    // Distribute amount among actual purchasers (adults) and track by household head
+                    const purchasers = record.purchaser.split(', ').map(p => p.trim());
+                    const actualAdultPurchasers = purchasers.filter(p => family.adults.includes(p)); // Only adults contribute to the spending
+                    
+                    if (actualAdultPurchasers.length > 0) {
+                        const amountPerActualPurchaser = record.amount / actualAdultPurchasers.length;
+                        actualAdultPurchasers.forEach(p => {
+                            const householdHead = family.adultToHouseholdHead[p];
+                            if (householdHead && householdSpending[householdHead] !== undefined) {
+                                householdSpending[householdHead] += amountPerActualPurchaser;
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Shopping Distribution Logic (for households only)
+            shoppingDistributionTableBody.innerHTML = '';
+            
+            let totalUnits = 0;
+            householdHeads.forEach(head => {
+                totalUnits += family.households[head].units;
+            });
+
+            const fairSharePerUnit = totalUnits > 0 ? totalShoppingSpent / totalUnits : 0;
+
+            const familyBalances = {};
+            householdHeads.sort().forEach(head => { // Sort for consistent display
+                const expectedContribution = family.households[head].units * fairSharePerUnit;
+                const actualContribution = householdSpending[head];
+                const balance = actualContribution - expectedContribution; // Positive means overpaid, negative means underpaid
+                familyBalances[head] = balance;
+
+                const row = shoppingDistributionTableBody.insertRow();
+                row.className = 'border-b border-slate-200 hover:bg-slate-50';
+                let statusClass = '';
+                if (balance > 0.01) { // Overpaid
+                    statusClass = 'text-green-600 font-semibold';
+                } else if (balance < -0.01) { // Underpaid
+                    statusClass = 'text-red-600 font-semibold';
+                } else { // Balanced
+                    statusClass = 'text-slate-500';
+                }
+
+                row.innerHTML = `
+                    <td class="py-3 px-6 text-left">${family.households[head].familyName}</td>
+                    <td class="py-3 px-6 text-right">${actualContribution.toFixed(2)}</td>
+                    <td class="py-3 px-6 text-right ${statusClass}">${balance.toFixed(2)}</td>
+                `;
+            });
+            
+            // Add a footer row for total expenses and cost per unit
+            const totalRow = shoppingDistributionTableBody.insertRow();
+            totalRow.className = 'font-bold bg-slate-100 border-t-2 border-slate-300';
+            totalRow.innerHTML = `
+                <td class="py-3 px-6 text-left">${getTranslation('totalShoppingExpenses')}</td>
+                <td class="py-3 px-6 text-right">${totalShoppingSpent.toFixed(2)}</td>
+                <td class="py-3 px-6 text-right">${getTranslation('perPersonCost')} ${fairSharePerUnit.toFixed(2)}</td>
+            `;
+
+            // Update titles for shopping sections
+            document.getElementById('shopping-calc-title').textContent = getTranslation('shoppingCalcTitle');
+            // document.getElementById('add-purchase-modal-title').textContent = getTranslation('addPurchaseTitle'); // Modal title handled in open fn
+            document.getElementById('modal-purchase-date').previousElementSibling.textContent = getTranslation('purchaseDate');
+            document.getElementById('modal-purchase-amount').previousElementSibling.textContent = getTranslation('amountSpent');
+            document.getElementById('modal-purchase-category').previousElementSibling.textContent = getTranslation('categoryCol');
+            document.getElementById('modal-purchase-by').previousElementSibling.textContent = getTranslation('purchasedBy');
+            // document.getElementById('modal-add-purchase-btn').textContent = getTranslation('addPurchase'); // Button text handled in open fn
+            document.getElementById('shopping-chart-title').textContent = getTranslation('shoppingChartTitle');
+            document.getElementById('shopping-chart-desc').textContent = getTranslation('shoppingChartDesc');
+            document.querySelector('#daily-shopping-table-body').closest('table').querySelector('thead tr th:nth-child(1)').textContent = getTranslation('dateCol');
+            document.querySelector('#daily-shopping-table-body').closest('table').querySelector('thead tr th:nth-child(2)').textContent = getTranslation('purchasersCol');
+            document.querySelector('#daily-shopping-table-body').closest('table').querySelector('thead tr th:nth-child(3)').textContent = getTranslation('amountCol');
+            document.querySelector('#daily-shopping-table-body').closest('table').querySelector('thead tr th:nth-child(4)').textContent = getTranslation('categoryCol'); // Updated header
+            document.querySelector('#daily-shopping-table-body').closest('table').querySelector('thead tr th:nth-child(5)').textContent = getTranslation('addedByCol'); // Updated header
+            document.querySelector('#daily-shopping-table-body').closest('table').querySelector('thead tr th:nth-child(6)').textContent = getTranslation('actionsCol'); // New header
+            document.getElementById('shopping-distribution-table-title').textContent = getTranslation('shoppingDistributionTableTitle');
+            document.getElementById('shopping-distribution-desc').textContent = getTranslation('shoppingDistributionDesc');
+            document.querySelector('#shopping-distribution-table-body').closest('table').querySelector('thead tr th:nth-child(1)').textContent = getTranslation('familyMemberCol');
+            document.querySelector('#shopping-distribution-table-body').closest('table').querySelector('thead tr th:nth-child(2)').textContent = getTranslation('totalSpentCol');
+            document.querySelector('#shopping-distribution-table-body').closest('table').querySelector('thead tr th:nth-child(3)').textContent = getTranslation('oweOwedCol');
+        }
+
+        function createShoppingCostChart() {
+            // This chart will visualize the net balance for each household head
+            const householdSpending = {};
+            householdHeads.forEach(head => householdSpending[head] = 0);
+
+            let totalShoppingSpent = 0;
+            scheduleData.forEach(day => {
+                day.shoppingRecords.forEach(record => {
+                    const purchasers = record.purchaser.split(', ').map(p => p.trim());
+                    const actualAdultPurchasers = purchasers.filter(p => family.adults.includes(p));
+                    if (actualAdultPurchasers.length > 0) {
+                        const amountPerActualPurchaser = record.amount / actualAdultPurchasers.length;
+                        actualAdultPurchasers.forEach(p => {
+                            const householdHead = family.adultToHouseholdHead[p];
+                            if (householdHead && householdSpending[householdHead] !== undefined) {
+                                householdSpending[householdHead] += amountPerActualPurchaser;
+                            }
+                        });
+                    }
+                    totalShoppingSpent += record.amount;
+                });
+            });
+
+            let totalUnits = 0;
+            householdHeads.forEach(head => {
+                totalUnits += family.households[head].units;
+            });
+            const fairSharePerUnit = totalUnits > 0 ? totalShoppingSpent / totalUnits : 0;
+
+            const labels = [];
+            const data = []; // This will be the net balance
+            const backgroundColors = [];
+            const borderColors = [];
+
+            // Sort household heads by their family name for consistent chart display
+            const sortedHouseholdHeads = householdHeads.sort((a, b) => {
+                const nameA = family.households[a].familyName.toUpperCase();
+                const nameB = family.households[b].familyName.toUpperCase();
+                if (nameA < nameB) return -1;
+                if (nameA > nameB) return 1;
+                return 0;
+            });
+
+            sortedHouseholdHeads.forEach(head => { 
+                labels.push(family.households[head].familyName);
+                const expectedContribution = family.households[head].units * fairSharePerUnit;
+                const actualContribution = householdSpending[head];
+                const balance = actualContribution - expectedContribution;
+                data.push(balance);
+
+                if (balance > 0.01) { // Overpaid (will receive)
+                    backgroundColors.push('#20c997'); // Green
+                    borderColors.push('#17a2b8');
+                } else if (balance < -0.01) { // Underpaid (will owe)
+                    backgroundColors.push('#fd7e14'); // Orange
+                    borderColors.push('#e65100');
+                } else {
+                    backgroundColors.push('#94a3b8'); // Gray (balanced)
+                    borderColors.push('#64748b');
+                }
+            });
+
+
+            if (window.shoppingCostChart) {
+                window.shoppingCostChart.destroy();
+            }
+
+            window.shoppingCostChart = new Chart(shoppingCostChartCanvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: getTranslation('oweOwedCol'),
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1,
+                        borderRadius: 5,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            padding: 10,
+                            cornerRadius: 6,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.x !== null) {
+                                        const value = context.parsed.x;
+                                        if (value > 0.01) {
+                                            label += `${new Intl.NumberFormat(currentLanguage, { style: 'currency', currency: 'EUR' }).format(value)} (${getTranslation('owesYou')})`; // "owes you"
+                                        } else if (value < -0.01) {
+                                            label += `${new Intl.NumberFormat(currentLanguage, { style: 'currency', currency: 'EUR' }).format(Math.abs(value))} (${getTranslation('youOwe')})`; // "you owe"
+                                        } else {
+                                            label += 'Balanced';
+                                        }
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#e2e8f0'
+                            },
+                            ticks: {
+                                color: '#475569'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#475569'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createCategoryPieChart() {
+            const categoryTotals = {};
+            const categories = ["Daily Shopping", "Drinks bar", "Presents", "Restaurant", "Activities", "Others"];
+            categories.forEach(cat => categoryTotals[cat] = 0);
+
+            scheduleData.forEach(day => {
+                day.shoppingRecords.forEach(record => {
+                    const category = record.category || "Others"; // Default to 'Others' if category is missing
+                    categoryTotals[category] = (categoryTotals[category] || 0) + record.amount;
+                });
+            });
+
+            const labels = Object.keys(categoryTotals);
+            const data = Object.values(categoryTotals);
+
+            // Filter out categories with 0 spend for cleaner chart
+            const filteredLabels = [];
+            const filteredData = [];
+            for (let i = 0; i < labels.length; i++) {
+                if (data[i] > 0) {
+                    filteredLabels.push(labels[i]);
+                    filteredData.push(data[i]);
+                }
+            }
+
+            // Generate vibrant and distinct colors for pie slices
+            const pieChartColors = [
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
+                '#C9CBCF', '#7FDBFF', '#00FFFF', '#FFD700', '#ADFF2F', '#FF4500'
+            ];
+            const backgroundColors = filteredLabels.map((_, i) => pieChartColors[i % pieChartColors.length]);
+            const borderColors = backgroundColors.map(color => Chart.helpers.color(color).darken(0.2).rgbString());
+
+            const ctx = categoryPieChartCanvas.getContext('2d');
+            if (window.categoryPieChart) {
+                window.categoryPieChart.destroy();
+            }
+
+            window.categoryPieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: filteredLabels,
+                    datasets: [{
+                        data: filteredData,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#475569', // slate-600
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            padding: 10,
+                            cornerRadius: 6,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += new Intl.NumberFormat(currentLanguage, { style: 'currency', currency: 'EUR' }).format(context.parsed);
+                                        const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
+                                        const percentage = (context.parsed / total * 100).toFixed(1) + '%';
+                                        label += ` (${percentage})`;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Update translations for category chart titles
+            document.getElementById('category-chart-title').textContent = getTranslation('categoryChartTitle');
+            document.getElementById('category-chart-desc').textContent = getTranslation('categoryChartDesc');
+        }
 
         function getTranslation(key) {
             const value = translations[currentLanguage][key];
             if (value === undefined) {
-                // Fallback to English if translation is missing for the current language
                 return translations['en'][key] || key;
             }
             return value;
@@ -1053,18 +2016,21 @@
             const formattedEndDate = defaultEndDate.toLocaleDateString(currentLanguage, options);
             appDatesElement.textContent = `${formattedStartDate} - ${formattedEndDate}`;
 
-            // Also update labels for date pickers and assign button
             startDateLabel.textContent = getTranslation('startDateLabel');
             endDateLabel.textContent = getTranslation('endDateLabel');
             assignTasksBtn.textContent = getTranslation('assignTasksButton');
-            document.getElementById('task-distribution-chart-title').textContent = getTranslation('taskDistribution'); // Update chart title
-            document.getElementById('task-chart-desc').textContent = getTranslation('taskDistributionDescription'); // Update chart description
+            document.getElementById('task-distribution-chart-title').textContent = getTranslation('taskDistribution'); 
+            document.getElementById('task-chart-desc').textContent = getTranslation('taskDistributionDescription'); 
         }
 
         function updateLanguage(lang) {
             currentLanguage = lang;
             document.documentElement.lang = lang; 
             refreshUI(); 
+            // Update name modal translations again after language change
+            nameModalTitle.textContent = getTranslation('nameModalTitle');
+            nameModalDescription.textContent = getTranslation('nameModalDescription');
+            nameAuditInfo.textContent = getTranslation('nameAuditInfo');
         }
 
         function populateDaySelector() {
@@ -1083,12 +2049,18 @@
 
         function populatePersonFilter() {
             personFilter.innerHTML = `<option value="all">${getTranslation('showAll')}</option>`; 
-            allFamilyMembers.sort().forEach(person => { // Sort all members for consistent order
+            allFamilyMembers.sort().forEach(person => { 
                 const option = document.createElement('option');
                 option.value = person;
                 option.textContent = person;
                 personFilter.appendChild(option);
             });
+            // Ensure the filter value remains selected if it was previously set and is still valid
+            if (personFilter.dataset.currentSelectedValue && allFamilyMembers.includes(personFilter.dataset.currentSelectedValue)) {
+                personFilter.value = personFilter.dataset.currentSelectedValue;
+            } else {
+                personFilter.value = 'all'; // Default to 'Show All'
+            }
         }
 
         function displayDay(index) {
@@ -1163,9 +2135,28 @@
             taskGrid.appendChild(createTeamTaskCard('cleaningTable', dayData.cleaning, '🧽'));
             taskGrid.appendChild(createTaskCard('houseCleaning', dayData.houseCleaning, '🧹'));
             
-            if (dayData.shopping !== undefined) {
-                taskGrid.appendChild(createTaskCard('shopping', dayData.shopping, '🛒'));
+            // Modified Shopping card to show total spent and purchasers from shoppingRecords
+            const totalShoppingForDay = (dayData.shoppingRecords || []).reduce((sum, record) => sum + record.amount, 0);
+            const shoppingPurchasers = Array.from(new Set((dayData.shoppingRecords || []).flatMap(record => record.purchaser.split(', ').map(p => p.trim()))));
+            
+            const shoppingInfo = [];
+            if (totalShoppingForDay > 0) {
+                shoppingInfo.push(`Total: ${totalShoppingForDay.toFixed(2)}€`);
             }
+            if (shoppingPurchasers.length > 0) {
+                shoppingInfo.push(`By: ${shoppingPurchasers.join(', ')}`);
+            }
+
+            const shoppingCard = document.createElement('div');
+            shoppingCard.className = 'task-card p-6 flex flex-col items-center text-center';
+            shoppingCard.innerHTML = `
+                <div class="text-4xl mb-3 text-teal-600">🛒</div>
+                <h3 class="text-xl font-bold mb-3 text-slate-800">${getTranslation('shopping')}</h3>
+                <div class="flex flex-wrap justify-center">
+                    ${shoppingInfo.length > 0 ? shoppingInfo.map(info => `<span class="inline-block bg-slate-200 text-slate-700 text-sm font-medium mr-2 mb-2 px-3 py-1 rounded-full">${info}</span>`).join('') : `<span class="text-slate-500">${getTranslation('noOneAssigned')}</span>`}
+                </div>
+            `;
+            taskGrid.appendChild(shoppingCard);
 
             const notesContainer = document.getElementById('notes-container');
             const dailyNotes = document.getElementById('daily-notes');
@@ -1180,6 +2171,9 @@
         }
         
         function displayPersonalTasks(person) {
+            // Store the current selection so it can be re-applied after refreshUI
+            personFilter.dataset.currentSelectedValue = person;
+
             const taskList = document.getElementById('personal-task-list');
             taskList.innerHTML = '';
 
@@ -1204,7 +2198,19 @@
                 checkTask('dressingTable', day.dressing);
                 checkTask('cleaningTable', day.cleaning);
                 checkTask('houseCleaning', day.houseCleaning);
-                checkTask('shopping', day.shopping);
+                
+                // For shopping, check both assigned shopping task and shopping records
+                if (day.shopping && day.shopping.includes(person)) {
+                     assignedTasks.push({date: day.date, task: `${getTranslation('shopping')} (Assigned Task)`});
+                }
+                if (day.shoppingRecords && day.shoppingRecords.some(record => record.purchaser.includes(person))) {
+                    const totalSpentByPersonOnDay = day.shoppingRecords
+                        .filter(record => record.purchaser.includes(person))
+                        .reduce((sum, record) => sum + record.amount / record.purchaser.split(',').length, 0); // Distribute cost if shared
+                    if (totalSpentByPersonOnDay > 0) {
+                        assignedTasks.push({date: day.date, task: `${getTranslation('shopping')} (Spent: ${totalSpentByPersonOnDay.toFixed(2)}€)`});
+                    }
+                }
             });
 
             if (assignedTasks.length === 0) {
@@ -1223,39 +2229,38 @@
         }
 
         function createTaskDistributionChart() {
-            const memberCounts = {};
-            // Initialize all family members to 0 tasks
-            allFamilyMembers.forEach(member => memberCounts[member] = 0); 
+            const individualTaskCounts = {};
+            allFamilyMembers.forEach(member => individualTaskCounts[member] = 0); 
 
-            // Ensure scheduleData is not empty before processing
             if (scheduleData.length === 0) {
                 const ctx = document.getElementById('task-distribution-chart').getContext('2d');
-                if (taskDistributionChart) {
-                    taskDistributionChart.destroy();
-                }
-                taskDistributionChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: [], 
-                        datasets: [] 
-                    },
-                    options: {} 
-                });
+                if (window.taskDistributionChart) { window.taskDistributionChart.destroy(); }
+                window.taskDistributionChart = new Chart(ctx, { type: 'bar', data: { labels: [], datasets: [] }, options: {} });
                 return; 
             }
 
             scheduleData.forEach(day => {
                 const countAssignments = (assigned) => {
                     if (Array.isArray(assigned)) {
-                        assigned.forEach(p => { if (memberCounts[p] !== undefined) memberCounts[p]++; });
-                    } else if (typeof assigned === 'string' && assigned !== '' && memberCounts[assigned] !== undefined) {
-                        memberCounts[assigned]++;
+                        assigned.forEach(p => {
+                            if (individualTaskCounts[p] !== undefined) {
+                                individualTaskCounts[p]++;
+                            }
+                        });
+                    } else if (typeof assigned === 'string' && assigned !== '') {
+                        if (individualTaskCounts[assigned] !== undefined) {
+                            individualTaskCounts[assigned]++;
+                        }
                     } else if (typeof assigned === 'object' && assigned !== null) {
-                        if (assigned.adult && memberCounts[assigned.adult] !== undefined) {
-                            memberCounts[assigned.adult]++;
+                        if (assigned.adult && individualTaskCounts[assigned.adult] !== undefined) {
+                            individualTaskCounts[assigned.adult]++;
                         }
                         if (Array.isArray(assigned.children)) {
-                            assigned.children.forEach(c => { if (memberCounts[c] !== undefined) memberCounts[c]++; });
+                            assigned.children.forEach(c => {
+                                if (individualTaskCounts[c] !== undefined) {
+                                    individualTaskCounts[c]++;
+                                }
+                            });
                         }
                     }
                 };
@@ -1266,30 +2271,18 @@
                 countAssignments(day.shopping);
             });
 
-            const labels = Object.keys(memberCounts);
-            const data = Object.values(memberCounts);
+            // Prepare labels and data, sorted by individual name
+            const labels = Object.keys(individualTaskCounts).sort();
+            const data = labels.map(label => individualTaskCounts[label]);
+
+            const backgroundColors = labels.map((_, i) => '#14b8a6'); // teal-500
+            const borderColors = labels.map((_, i) => '#0d9488'); // teal-600
             
-            const backgroundColors = labels.map(label => {
-                if (family.children.includes(label)) {
-                    return '#fef08a'; // yellow-200 pastel for children
-                } else {
-                    return '#14b8a6'; // teal-500 for adults
-                }
-            });
-
-            const borderColors = labels.map(label => {
-                if (family.children.includes(label)) {
-                    return '#facc15'; // yellow-400 for children
-                } else {
-                    return '#0d9488'; // teal-600 for adults
-                }
-            });
-
             const ctx = document.getElementById('task-distribution-chart').getContext('2d');
-            if (taskDistributionChart) {
-                taskDistributionChart.destroy();
+            if (window.taskDistributionChart) {
+                window.taskDistributionChart.destroy();
             }
-            taskDistributionChart = new Chart(ctx, {
+            window.taskDistributionChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
@@ -1347,12 +2340,11 @@
                 case 'cooking':
                 case 'houseCleaning':
                 case 'shopping':
-                    // Marie, Ankie, Mathilde are now always eligible for these
                     return family.adults; 
-                case 'dressing': // adult lead
-                case 'cleaning': // adult lead
+                case 'dressing': 
+                case 'cleaning': 
                     return family.adults;
-                case 'children-dressing-cleaning': // child helpers
+                case 'children-dressing-cleaning': 
                     return family.children;
                 default:
                     return [];
@@ -1412,7 +2404,8 @@
 
         function openEditModal(dayIndex) {
             if (!currentUserFamilyName) {
-                alert("Please enter your family name to edit tasks."); // Updated alert
+                nameModal.classList.remove('hidden');
+                familyNameInput.focus();
                 return;
             }
             currentDayIndex = dayIndex;
@@ -1446,7 +2439,7 @@
             // House Cleaning Task - Single adult select
             editFormContent.appendChild(createSelectElement(`edit-houseCleaning`, getEligiblePeople('houseCleaning'), dayData.houseCleaning, false, false, getTranslation('houseCleaning')));
 
-            // Shopping Task - All adults eligible, multiple select
+            // Shopping Task (assigned people) - All adults eligible, multiple select
             const shoppingPeople = Array.isArray(dayData.shopping) ? dayData.shopping : (typeof dayData.shopping === 'string' ? [dayData.shopping] : []);
             editFormContent.appendChild(createSelectElement(`edit-shopping`, getEligiblePeople('shopping'), shoppingPeople, true, true, getTranslation('shopping')));
 
@@ -1469,7 +2462,6 @@
                     }
                 } catch (error) {
                     console.error("Error fetching audit log:", error);
-                    // Continue with an empty log if fetch fails
                 }
             }
 
@@ -1495,10 +2487,8 @@
                 const oldVal = originalAssignments[key];
                 const newVal = task.new;
 
-                // Deep comparison for objects/arrays
                 let changed = false;
                 if (Array.isArray(oldVal) || Array.isArray(newVal)) {
-                    // Convert arrays to sorted strings for comparison
                     const oldStr = Array.isArray(oldVal) ? oldVal.sort().join(',') : String(oldVal);
                     const newStr = Array.isArray(newVal) ? newVal.sort().join(',') : String(newVal);
                     if (oldStr !== newStr) {
@@ -1515,12 +2505,12 @@
                 }
 
                 if (changed) {
-                    currentAuditLog.unshift({ // Add to the beginning for most recent first
+                    currentAuditLog.unshift({ 
                         changedBy: currentUserFamilyName,
                         timestamp: now,
                         dayDate: dayData.date,
                         taskType: getTranslation(task.type),
-                        oldValue: JSON.stringify(oldVal), // Store as string for simplicity
+                        oldValue: JSON.stringify(oldVal), 
                         newValue: JSON.stringify(newVal)
                     });
                 }
@@ -1533,13 +2523,10 @@
             dayData.houseCleaning = tasksToLog.houseCleaning.new;
             dayData.shopping = tasksToLog.shopping.new;
 
-
             editModal.classList.add('hidden');
             
-            // OPTIMISTIC UI UPDATE: Refresh UI immediately with the locally updated data
             refreshUI(); 
 
-            // Then save the data to Firestore asynchronously, including the updated audit log
             saveScheduleData(scheduleData, new Date(startDatePicker.value), new Date(endDatePicker.value), lastAssignmentInfo.dataset.lastAssignedBy || '', lastAssignmentInfo.dataset.lastAssignedOn || '', currentAuditLog); 
         }
 
@@ -1549,7 +2536,8 @@
 
         async function openHistoryModal() {
             if (!currentUserFamilyName) {
-                alert("Please enter your family name to view history."); // Updated alert
+                nameModal.classList.remove('hidden');
+                familyNameInput.focus();
                 return;
             }
 
@@ -1582,7 +2570,10 @@
                         const oldParsed = JSON.parse(log.oldValue);
                         const newParsed = JSON.parse(log.newValue);
                         
-                        if (Array.isArray(oldParsed) || typeof oldParsed === 'object') {
+                        if (log.taskType === 'Purchase' || log.taskType === 'Purchase Deletion') { // Special handling for purchase log
+                            oldValFormatted = `Amount: ${oldParsed.amount}, By: ${oldParsed.purchaser}, Category: ${oldParsed.category}`;
+                            newValFormatted = log.newValue === 'DELETED' ? 'DELETED' : `Amount: ${newParsed.amount}, By: ${newParsed.purchaser}, Category: ${newParsed.category}`;
+                        } else if (Array.isArray(oldParsed) || typeof oldParsed === 'object') {
                             oldValFormatted = Array.isArray(oldParsed) ? oldParsed.join(', ') : (oldParsed.adult ? `${oldParsed.adult} (+ ${oldParsed.children.join(', ')})` : JSON.stringify(oldParsed));
                             if (oldValFormatted === '') oldValFormatted = 'None';
                         }
@@ -1591,7 +2582,7 @@
                              if (newValFormatted === '') newValFormatted = 'None';
                         }
                     } catch (e) {
-                        // If parsing fails, use raw string
+                        // Fallback if JSON parsing fails
                         oldValFormatted = log.oldValue === '' ? 'None' : log.oldValue;
                         newValFormatted = log.newValue === '' ? 'None' : log.newValue;
                     }
