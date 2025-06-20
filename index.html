@@ -108,7 +108,7 @@
     </div>
 
     <div class="container mx-auto p-4 md:p-8 max-w-7xl">
-        <div id="user-id-display" class="absolute top-2 left-2 text-xs text-slate-500 bg-slate-100 p-1 rounded-md shadow-sm z-10">Loading User...</div>
+        <div id="greeting-display" class="absolute top-2 left-2 text-sm text-slate-700 bg-slate-100 p-1 rounded-md shadow-sm z-10"></div>
         <div class="relative flex flex-col items-center mb-8 md:mb-12">
             <header class="text-center w-full">
                 <h1 id="app-title" class="text-4xl md:text-5xl font-bold text-slate-900">Family Holiday Planner</h1>
@@ -165,7 +165,7 @@
                 <div id="task-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     </div>
                 <div id="notes-container" class="mt-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-r-lg hidden">
-                    <p><strong class="font-bold"><span id="notes-for-day-text">Notes for the day</span>:</strong> <span id="daily-notes"></span></p>
+                    <p><strong class="font-bold"><span id="notes-for-day-text">Notes for the day</span>:</b> <span id="daily-notes"></span></p>
                 </div>
                 <div class="flex justify-center mt-6 space-x-4">
                     <button id="assign-tasks-btn" class="px-6 py-3 bg-teal-600 text-white rounded-full font-semibold hover:bg-teal-700 transition shadow-md">Assign Tasks Automatically</button>
@@ -255,6 +255,13 @@
                             <!-- Distribution results will be injected here -->
                         </tbody>
                     </table>
+                </div>
+                 <!-- Settlement Summary Text -->
+                <div id="settlement-summary-container" class="p-6 bg-blue-50 border-l-4 border-blue-400 text-blue-800 rounded-r-lg mt-8">
+                    <h3 class="text-xl font-bold mb-3">Settlement Summary:</h3>
+                    <div id="settlement-summary-content" class="text-lg space-y-2">
+                        <!-- Summary text will be injected here -->
+                    </div>
                 </div>
             </section>
 
@@ -408,14 +415,6 @@
         const family = {
             adults: ["Miguel", "Ankie", "Juan", "Marie", "David", "Mathilde", "Eva"],
             children: ["Noah", "Emma", "Mathias", "Florent"],
-            // Define households with a head and their unit count (adults + children in their 'household')
-            // This is an interpretation based on the example given (Juan 4 units, David 2 units, Eva 1 unit)
-            // The prompt says "Each person (adult or child) counts as one unit by default."
-            // Let's make an assumption for family groups for the purpose of this example:
-            // Group 1: Miguel, Ankie, Noah (3 units) - Head: Miguel
-            // Group 2: Juan, Marie, Emma, Mathias (4 units) - Head: Juan
-            // Group 3: David, Mathilde, Florent (3 units) - Head: David
-            // Group 4: Eva (1 unit) - Head: Eva
             households: {
                 // Corrected family unit allocations as per user's request
                 "Miguel": { members: ["Miguel", "Ankie", "Noah", "Emma"], units: 4, familyName: "Family Miguel" },
@@ -445,7 +444,7 @@
 
         let db;
         let auth;
-        let userId = 'anonymous'; // Default until authenticated
+        let userId = 'anonymous'; // Default until authenticated (will be Firebase UID)
 
         // Changed to window properties to avoid redeclaration errors in some environments
         window.taskDistributionChart = null; 
@@ -521,7 +520,7 @@
                 changeLogEntry: "{who} changed {taskType} on {date}: From {old} to {new}",
                 noHistory: "No change history available.",
                 nameModalTitle: "What is your name?",
-                nameModalDescription: "Please enter your name from the family list to proceed.",
+                nameModalDescription: "Please enter your name.",
                 nameAuditInfo: "Your name will be used for audit purposes to show who made modifications in the system.",
                 shoppingCalcTitle: "Shopping Calculator",
                 addPurchaseTitle: "Add a New Purchase",
@@ -549,7 +548,11 @@
                 youOwe: "You owe ",
                 owesYou: " owes you",
                 categoryChartTitle: "Spending by Category", // New translation key
-                categoryChartDesc: "This chart shows the percentage distribution of your shopping expenses across different categories." // New translation key
+                categoryChartDesc: "This chart shows the percentage distribution of your shopping expenses across different categories.", // New translation key
+                helloGreeting: "Hello, {userName}!",
+                settlementSummaryTitle: "Settlement Summary:",
+                owesTo: "{payerFamily} owes €{amount} to {receiverFamily}",
+                netReceives: "{receiverFamily} receives a total of €{amount}"
             },
             fr: {
                 title: "Planificateur de Vacances en Famille",
@@ -618,7 +621,7 @@
                 changeLogEntry: "{who} a modifié {taskType} le {date} : De {old} à {new}",
                 noHistory: "Aucun historique de modification disponible.",
                 nameModalTitle: "Quel est votre nom ?",
-                nameModalDescription: "Veuillez entrer votre nom parmi la liste des membres de la famille pour continuer.",
+                nameModalDescription: "Veuillez entrer votre nom.",
                 nameAuditInfo: "Votre nom sera utilisé à des fins d'audit pour indiquer qui a effectué des modifications dans le système.",
                 shoppingCalcTitle: "Calculateur de Courses",
                 addPurchaseTitle: "Ajouter un Nouvel Achat",
@@ -646,7 +649,11 @@
                 youOwe: "Vous devez ",
                 owesYou: " vous doit",
                 categoryChartTitle: "Dépenses par Catégorie",
-                categoryChartDesc: "Ce graphique montre la répartition en pourcentage de vos dépenses de courses par catégorie."
+                categoryChartDesc: "Ce graphique montre la répartition en pourcentage de vos dépenses de courses par catégorie.",
+                helloGreeting: "Bonjour, {userName}!",
+                settlementSummaryTitle: "Résumé du règlement :",
+                owesTo: "{payerFamily} doit €{amount} à {receiverFamily}",
+                netReceives: "{receiverFamily} reçoit un total de €{amount}"
             },
             es: {
                 title: "Planificador de Vacaciones Familiares",
@@ -715,7 +722,7 @@
                 changeLogEntry: "{who} cambió {taskType} el {date} : De {old} a {new}",
                 noHistory: "No hay historial de cambios disponible.",
                 nameModalTitle: "Cuál es tu nombre?",
-                nameModalDescription: "Por favor, introduce tu nombre de la lista familiar para continuar.",
+                nameModalDescription: "Por favor, introduce tu nombre.",
                 nameAuditInfo: "Tu nombre será usado para propósitos de auditoría para mostrar quién hizo modificaciones en el sistema.",
                 shoppingCalcTitle: "Calculadora de Compras",
                 addPurchaseTitle: "Añadir una Nueva Compra",
@@ -743,7 +750,11 @@
                 youOwe: "Debes ",
                 owesYou: " te debe",
                 categoryChartTitle: "Gastos por Categoría",
-                categoryChartDesc: "Este gráfico muestra la distribución porcentual de tus gastos de compra por diferentes categorías."
+                categoryChartDesc: "Este gráfico muestra la distribución porcentual de tus gastos de compra por diferentes categorías.",
+                helloGreeting: "¡Hola, {userName}!",
+                settlementSummaryTitle: "Resumen de Liquidación :",
+                owesTo: "{payerFamily} debe €{amount} a {receiverFamily}",
+                netReceives: "{receiverFamily} recibe un total de €{amount}"
             },
             nl: {
                 title: "Familie Vakantie Planner",
@@ -774,7 +785,7 @@
                 helpEditTitle: "Hoe taken bewerken",
                 helpEditDesc1: "Om te wijzigen wie aan een taak is toegewezen op een specifieke dag, selecteert u eerst de dag in de tijdlijn bovenaan de pagina. Zodra de taken van de dag worden weergegeven, klikt u op de knop <span class=\"font-bold\">Bewerken</span> naast de titel van de dag.",
                 helpEditDesc2: "Er verschijnt een pop-upvenster met vervolgkeuzemenu's voor elke taak. Selecteer de nieuwe familieleden voor elke rol. Merk op dat sommige vervolgkeuzemenu's meerdere selecties toestaan (bijv. Koken, Boodschappen), terwijl andere enkelvoudige selectie zijn (bijv. Volwassen Leider voor Dekken/Schoonmaken, Huis Schoonmaken). De beschikbare opties worden gefilterd op basis van de regels wie welke taak mag uitvoeren.",
-                helpEditDesc3: "Nadat u uw wijzigingen hebt aangebracht, klikt u op <span=\"font-bold\">Wijzigingen opslaan</span>. De dagelijkse weergave en de grafiek <span=\"font-bold\">Taakverdeling</span> worden automatisch bijgewerkt om uw wijzigingen weer te geven. Als u de wijzigingen wilt annuleren, klikt u op <span=\"font-bold\">Annuleren</span>.",
+                helpEditDesc3: "Nadat u uw wijzigingen hebt aangebracht, klikt u op <span=\"font-bold\">Wijzigingen opslaan</span>. De dagelijkse weergave en de grafiek <span class=\"font-bold\">Taakverdeling</span> worden automatisch bijgewerkt om uw wijzigingen weer te geven. Als u de wijzigingen wilt annuleren, klikt u op <span=\"font-bold\">Annuleren</span>.",
                 helpLangTitle: "Taalselectie",
                 helpLangDesc: "U kunt de taal van de applicatie wijzigen met behulp van het vervolgkeuzemenu in de rechterbovenhoek van de pagina. Selecteer uw voorkeurstaal (Engels, Frans, Spaans of Nederlands) en de hele interface, inclusief taaknamen en beschrijvingen, wordt direct bijgewerkt.",
                 helpAllocTitle: "Taaktoewijzing & Eerlijkheid",
@@ -813,7 +824,7 @@
                 changeLogEntry: "{who} heeft {taskType} gewijzigd op {date} : Van {old} naar {new}",
                 noHistory: "Geen wijzigingsgeschiedenis beschikbaar.",
                 nameModalTitle: "Wat is uw naam?",
-                nameModalDescription: "Veuillez entrer votre nom parmi la liste des membres de la famille pour continuer.",
+                nameModalDescription: "Veuillez entrer votre naam.",
                 nameAuditInfo: "Votre naam zal worden gebruikt voor auditdoeleinden om aan te geven wie wijzigingen heeft aangebracht in het systeem.",
                 shoppingCalcTitle: "Boodschappencalculator",
                 addPurchaseTitle: "Nieuwe aankoop toevoegen",
@@ -840,10 +851,15 @@
                 youOwe: "U bent verschuldigd ",
                 owesYou: " is u verschuldigd",
                 categoryChartTitle: "Uitgaven per Categorie",
-                categoryChartDesc: "Deze grafiek toont de procentuele verdeling van uw boodschappenkosten over verschillende categorieën."
+                categoryChartDesc: "Deze grafiek toont de procentuele verdeling van uw boodschappenkosten over verschillende categorieën.",
+                helloGreeting: "Hallo, {userName}!",
+                settlementSummaryTitle: "Afwikkelingsoverzicht :",
+                owesTo: "{payerFamily} is €{amount} verschuldigd aan {receiverFamily}",
+                netReceives: "{receiverFamily} ontvangt een totaal van €{amount}"
             }
         };
 
+        const greetingDisplay = document.getElementById('greeting-display'); // New greeting display
         const personFilter = document.getElementById('person-filter');
         const daySelector = document.getElementById('day-selector');
         const languageSelector = document.getElementById('language-selector');
@@ -856,7 +872,7 @@
         const helpModal = document.getElementById('help-modal');
         const closeHelpBtn = document.getElementById('close-help-btn');
         const loadingSpinner = document.getElementById('loading-spinner');
-        const userIdDisplay = document.getElementById('user-id-display');
+        // Removed userIdDisplay
         const appDatesElement = document.getElementById('app-dates');
         const startDatePicker = document.getElementById('start-date-picker');
         const endDatePicker = document.getElementById('end-date-picker');
@@ -874,15 +890,14 @@
         const nameModalTitle = document.getElementById('name-modal-title');
         const nameModalDescription = document.getElementById('name-modal-description');
         const nameAuditInfo = document.getElementById('name-audit-info');
-        const loginTriggerButton = document.getElementById('login-trigger-button'); // New login button
+        const loginTriggerButton = document.getElementById('login-trigger-button'); 
 
         // Shopping Calculator elements
-        // Moved to modal for clarity
-        const openAddPurchaseModalBtn = document.getElementById('open-add-purchase-modal-btn'); // Button to open the new modal
-        const addPurchaseModal = document.getElementById('add-purchase-modal'); // The new purchase modal
+        const openAddPurchaseModalBtn = document.getElementById('open-add-purchase-modal-btn'); 
+        const addPurchaseModal = document.getElementById('add-purchase-modal'); 
         const modalPurchaseDateInput = document.getElementById('modal-purchase-date');
         const modalPurchaseAmountInput = document.getElementById('modal-purchase-amount');
-        const modalPurchaseCategorySelect = document.getElementById('modal-purchase-category'); // New category select in modal
+        const modalPurchaseCategorySelect = document.getElementById('modal-purchase-category'); 
         const modalPurchaseBySelect = document.getElementById('modal-purchase-by');
         const modalAddPurchaseBtn = document.getElementById('modal-add-purchase-btn');
         const cancelAddPurchaseBtn = document.getElementById('cancel-add-purchase-btn');
@@ -890,23 +905,26 @@
         const dailyShoppingTableBody = document.getElementById('daily-shopping-table-body');
         const shoppingDistributionTableBody = document.getElementById('shopping-distribution-table-body');
         const shoppingCostChartCanvas = document.getElementById('shopping-cost-chart');
-        const categoryPieChartCanvas = document.getElementById('category-pie-chart'); // New canvas for pie chart
-        const shoppingCalculationExplanationElement = document.getElementById('shopping-calculation-explanation'); // New element for explanation
+        const categoryPieChartCanvas = document.getElementById('category-pie-chart'); 
+        const shoppingCalculationExplanationElement = document.getElementById('shopping-calculation-explanation'); 
 
         // Delete confirmation modal elements
         const deleteConfirmModal = document.getElementById('delete-confirm-modal');
         const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
         const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
 
+        // Settlement Summary elements
+        const settlementSummaryContent = document.getElementById('settlement-summary-content');
 
-        let currentLanguage = 'en'; // Default language
-        let currentDayIndex = 0; // To track the currently displayed day
+
+        let currentLanguage = 'en'; 
+        let currentDayIndex = 0; 
 
         // Function to generate the schedule dynamically based on dates, initially with blank tasks
         function createBlankScheduleData(start, end) {
             const days = [];
             let currentDate = new Date(start);
-            currentDate.setUTCHours(0, 0, 0, 0); // Normalize to UTC midnight to avoid timezone issues
+            currentDate.setUTCHours(0, 0, 0, 0); 
 
             while (currentDate.getTime() <= end.getTime()) { 
                 const dateOptions = { month: 'short', day: 'numeric', year: 'numeric' };
@@ -924,7 +942,7 @@
                     houseCleaning: "",
                     shopping: [],
                     notes: "",
-                    shoppingRecords: [] // Initialize new field for shopping costs
+                    shoppingRecords: [] 
                 };
                 
                 days.push(dayEntry);
@@ -939,14 +957,14 @@
             currentScheduleData.forEach((dayEntry, index) => {
                 const templateDay = templateCycle[index % templateCycle.length]; 
                 const newDayEntry = {
-                    ...dayEntry, // Keep existing date and day properties
+                    ...dayEntry, 
                     cooking: JSON.parse(JSON.stringify(templateDay.cooking)),
                     dressing: JSON.parse(JSON.stringify(templateDay.dressing)),
                     cleaning: JSON.parse(JSON.stringify(templateDay.cleaning)),
                     houseCleaning: JSON.parse(JSON.stringify(templateDay.houseCleaning)),
                     shopping: JSON.parse(JSON.stringify(templateDay.shopping)),
                     notes: templateDay.notes ? JSON.parse(JSON.stringify(templateDay.notes)) : "",
-                    shoppingRecords: JSON.parse(JSON.stringify(dayEntry.shoppingRecords || [])) // Preserve existing shopping records
+                    shoppingRecords: JSON.parse(JSON.stringify(dayEntry.shoppingRecords || [])) 
                 };
                 assignedSchedule.push(newDayEntry);
             });
@@ -954,104 +972,89 @@
         }
 
 
-        // Firebase Init & Data Fetch
+        // Firebase Init & Data Fetch - Modified for no user-facing auth
         async function initializeFirebase() {
             if (firebaseConfig) {
                 const app = firebase.initializeApp(firebaseConfig);
                 db = app.firestore(); 
                 auth = app.auth();    
 
-                // The onAuthStateChanged listener is important for getting the Firebase User ID.
-                auth.onAuthStateChanged(async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        userIdDisplay.textContent = `User ID: ${userId}`;
-                        await fetchUserProfile(userId); // Fetch profile to see if name is set and control UI visibility
-                    } else {
-                        // This case can happen if initialAuthToken is not provided by Canvas,
-                        // and signInAnonymously below has not completed yet.
-                        userId = 'anonymous'; 
-                        userIdDisplay.textContent = `User ID: Anonymous`;
-                        // Do not show name modal immediately here. It's triggered by the 'Login' button now.
-                        document.querySelector('main').classList.add('hidden'); // Ensure main content is hidden initially
-                        console.log("User not authenticated or profile not found. Main content hidden.");
-                    }
-                });
-
-                // Attempt to sign in anonymously if no initial auth token is provided by the environment.
-                // This ensures a Firebase user is always available for Firestore operations when the app is running.
-                if (!initialAuthToken) {
-                    try {
+                try {
+                    if (!initialAuthToken) {
                         await auth.signInAnonymously();
                         console.log("Signed in anonymously to Firebase for data persistence.");
-                    } catch (error) {
-                        console.error("Firebase anonymous sign-in failed:", error);
-                    }
-                } else {
-                    // Use the provided initialAuthToken if available
-                    try {
+                    } else {
                         await auth.signInWithCustomToken(initialAuthToken);
                         console.log("Signed in with custom token.");
-                    } catch (error) {
-                        console.error("Firebase custom token sign-in failed:", error);
-                        try {
-                             await auth.signInAnonymously();
-                             console.log("Failed custom token, signed in anonymously as fallback.");
-                        } catch (anonError) {
-                            console.error("Anonymous sign-in fallback also failed:", anonError);
-                        }
                     }
+                    userId = auth.currentUser.uid; // Set userId from Firebase UID
+                    console.log("Firebase User ID (UID) for persistence:", userId);
+
+                    // Load user name from local storage
+                    const storedName = localStorage.getItem('currentUserFamilyName');
+                    if (storedName) {
+                        currentUserFamilyName = storedName;
+                        updateGreetingDisplay();
+                        document.querySelector('main').classList.remove('hidden'); // Show main content
+                        loadingSpinner.classList.remove('hidden'); 
+                        fetchScheduleData(); // Start fetching data
+                    } else {
+                        // If no name found, show the name input modal
+                        loginTriggerButton.click(); // Programmatically click the login button
+                        document.querySelector('main').classList.add('hidden'); // Keep main content hidden
+                    }
+
+                } catch (error) {
+                    console.error("Firebase sign-in failed:", error);
+                    alert("Failed to connect to backend data. Some features may not work. Please try refreshing.");
+                    // Fallback to showing app but without data loading if Firebase fails completely
+                    document.querySelector('main').classList.remove('hidden');
+                    loadingSpinner.classList.add('hidden');
                 }
             } else {
                 console.warn("Firebase config not found. Running in local data mode (no persistence or auth).");
-                userIdDisplay.textContent = `User ID: Anonymous (Local)`;
-                // In local mode, main content is hidden until name is provided via the modal triggered by login button.
-                loadingSpinner.classList.add('hidden');
-                document.querySelector('main').classList.add('hidden');
-            }
-        }
-
-        // --- User Profile Management ---
-        async function fetchUserProfile(uid) {
-            if (!db) return;
-            const userProfileRef = db.collection(`artifacts/${appId}/users/${uid}/profile`).doc('user_profile');
-            try {
-                const doc = await userProfileRef.get();
-                if (doc.exists && doc.data().familyName) {
-                    currentUserFamilyName = doc.data().familyName;
-                    console.log("Fetched user family name:", currentUserFamilyName);
-                    nameModal.classList.add('hidden'); // Hide name modal if name is already set
-                    document.querySelector('main').classList.remove('hidden'); // Show main app content
-                    loadingSpinner.classList.remove('hidden'); 
-                    fetchScheduleData(); // Start fetching data
+                // In local mode, still use the name input flow for currentUserFamilyName
+                const storedName = localStorage.getItem('currentUserFamilyName');
+                if (storedName) {
+                    currentUserFamilyName = storedName;
+                    updateGreetingDisplay();
+                    document.querySelector('main').classList.remove('hidden');
+                    loadingSpinner.classList.add('hidden');
+                    // In local mode, scheduleData would need to be initialized if not loaded
+                    if (scheduleData.length === 0) {
+                        scheduleData = createBlankScheduleData(defaultStartDate, defaultEndDate);
+                        refreshUI();
+                    }
                 } else {
-                    currentUserFamilyName = ''; // No name found, user needs to enter it
-                    console.log("User profile not found or family name not set.");
-                    // Do not auto-show nameModal here. It's triggered by loginTriggerButton.
-                    // Keep main hidden until name is provided.
-                }
-            } catch (error) {
-                console.error("Error fetching user profile:", error);
-                currentUserFamilyName = '';
-                // Error fetching profile, assume no name and keep main hidden.
-            } finally {
-                // No explicit nameModal.classList.remove('hidden') here in fetchUserProfile for the initial load.
-                // The main content's visibility is tied to currentUserFamilyName.
-                if (!currentUserFamilyName) {
+                    loginTriggerButton.click();
                     document.querySelector('main').classList.add('hidden');
                 }
+                loadingSpinner.classList.add('hidden');
             }
         }
 
-        async function saveUserProfile(uid, familyName) {
-            if (!db) return;
-            const userProfileRef = db.collection(`artifacts/${appId}/users/${uid}/profile`).doc('user_profile');
-            try {
-                await userProfileRef.set({ familyName: familyName });
-                currentUserFamilyName = familyName;
-                console.log("User family name saved:", familyName);
-            } catch (error) {
-                console.error("Error saving user profile:", error);
+        // --- User Profile Management (Simplified for "no auth") ---
+        // No longer fetching/saving profile to Firestore for user's display name
+        // Display name is now solely from localStorage / user input
+        function updateGreetingDisplay() {
+            greetingDisplay.textContent = getTranslation('helloGreeting').replace('{userName}', currentUserFamilyName);
+        }
+
+        async function handleSaveName() {
+            const enteredName = familyNameInput.value.trim();
+            nameErrorMessage.classList.add('hidden');
+
+            if (enteredName) {
+                localStorage.setItem('currentUserFamilyName', enteredName); // Persist name
+                currentUserFamilyName = enteredName; 
+                updateGreetingDisplay();
+                nameModal.classList.add('hidden');
+                document.querySelector('main').classList.remove('hidden'); 
+                loadingSpinner.classList.remove('hidden'); 
+                fetchScheduleData(); // Trigger data fetch now that name is set
+            } else {
+                nameErrorMessage.textContent = "Please enter your name.";
+                nameErrorMessage.classList.remove('hidden');
             }
         }
 
@@ -1160,17 +1163,17 @@
             // Only proceed if a user name is set
             if (!currentUserFamilyName) {
                 document.querySelector('main').classList.add('hidden');
-                // Hide any generated content if user is not authenticated with a name
                 document.getElementById('task-grid').innerHTML = '';
                 document.getElementById('personal-task-list').innerHTML = '';
                 if (window.taskDistributionChart) { window.taskDistributionChart.destroy(); window.taskDistributionChart = null; }
                 if (window.shoppingCostChart) { window.shoppingCostChart.destroy(); window.shoppingCostChart = null; }
-                if (window.categoryPieChart) { window.categoryPieChart.destroy(); window.categoryPieChart = null; } // Destroy old chart
+                if (window.categoryPieChart) { window.categoryPieChart.destroy(); window.categoryPieChart = null; } 
                 dailyShoppingTableBody.innerHTML = '';
                 shoppingDistributionTableBody.innerHTML = '';
+                settlementSummaryContent.innerHTML = ''; // Clear settlement summary
                 return;
             } else {
-                document.querySelector('main').classList.remove('hidden'); // Show main content
+                document.querySelector('main').classList.remove('hidden'); 
             }
 
             if (scheduleData.length === 0) {
@@ -1183,9 +1186,10 @@
                 daySelector.innerHTML = ''; 
                 if (window.taskDistributionChart) { window.taskDistributionChart.destroy(); window.taskDistributionChart = null; }
                 if (window.shoppingCostChart) { window.shoppingCostChart.destroy(); window.shoppingCostChart = null; }
-                if (window.categoryPieChart) { window.categoryPieChart.destroy(); window.categoryPieChart = null; } // Destroy old chart
+                if (window.categoryPieChart) { window.categoryPieChart.destroy(); window.categoryPieChart = null; } 
                 dailyShoppingTableBody.innerHTML = '';
                 shoppingDistributionTableBody.innerHTML = '';
+                settlementSummaryContent.innerHTML = ''; // Clear settlement summary
                 return; 
             }
 
@@ -1196,12 +1200,12 @@
             populateDaySelector();
             populatePersonFilter(); 
             displayDay(currentDayIndex); 
-            displayPersonalTasks(personFilter.value); // Re-display personal tasks after any data change
+            displayPersonalTasks(personFilter.value); 
             createTaskDistributionChart(); 
-            // populatePurchaseBySelect(); // Now called when modal opens
-            renderShoppingSummaryTables(); // Render shopping tables
-            createShoppingCostChart(); // Render shopping chart
-            createCategoryPieChart(); // Render the new category pie chart
+            renderShoppingSummaryTables(); 
+            createShoppingCostChart(); 
+            createCategoryPieChart(); 
+            generateSettlementSummary(); // Call the new settlement summary function
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -1240,15 +1244,14 @@
 
             // Shopping Calculator new modal event listeners
             openAddPurchaseModalBtn.addEventListener('click', () => {
-                modalPurchaseDateInput.value = new Date().toISOString().split('T')[0]; // Set default date
-                modalPurchaseAmountInput.value = ''; // Clear amount
-                modalPurchaseCategorySelect.value = 'Daily Shopping'; // Reset category
-                populatePurchaseBySelect(true); // Populate with modal specific element, auto-select current user
-                modalAddPurchaseBtn.textContent = getTranslation('addPurchase'); // Ensure button says "Add Purchase"
-                modalAddPurchaseBtn.onclick = handleAddPurchase; // Set click handler for add
+                modalPurchaseDateInput.value = new Date().toISOString().split('T')[0]; 
+                modalPurchaseAmountInput.value = ''; 
+                modalPurchaseCategorySelect.value = 'Daily Shopping'; 
+                populatePurchaseBySelect(true); 
+                modalAddPurchaseBtn.textContent = getTranslation('addPurchase'); 
+                modalAddPurchaseBtn.onclick = handleAddPurchase; 
                 addPurchaseModal.classList.remove('hidden');
             });
-            // modalAddPurchaseBtn.addEventListener('click', handleAddPurchase); // Listener moved to click handler above for dynamic change
             cancelAddPurchaseBtn.addEventListener('click', () => {
                 addPurchaseModal.classList.add('hidden');
             });
@@ -1256,11 +1259,9 @@
             // Delete confirmation modal listeners
             cancelDeleteBtn.addEventListener('click', () => {
                 deleteConfirmModal.classList.add('hidden');
-                confirmDeleteBtn.dataset.dayIndex = ''; // Clear stored data
+                confirmDeleteBtn.dataset.dayIndex = ''; 
                 confirmDeleteBtn.dataset.recordIndex = '';
             });
-            // confirmDeleteBtn.addEventListener('click', handleConfirmDelete); // Attached dynamically in openDeleteConfirmModal
-
 
             await initializeFirebase(); 
 
@@ -1268,38 +1269,10 @@
             nameModalTitle.textContent = getTranslation('nameModalTitle');
             nameModalDescription.textContent = getTranslation('nameModalDescription');
             nameAuditInfo.textContent = getTranslation('nameAuditInfo');
-
-            // Set default date for purchase date input to today
-            // purchaseDateInput.value = new Date().toISOString().split('T')[0]; // This is now modal-specific
             
             // Initial state: hide main content if no family name is set yet.
-            // fetchUserProfile will handle showing it after name confirmation.
-            if (!currentUserFamilyName) {
-                document.querySelector('main').classList.add('hidden');
-            }
+            // initializeFirebase now handles initial visibility based on localStorage or modal.
         });
-
-        async function handleSaveName() {
-            const enteredName = familyNameInput.value.trim();
-            nameErrorMessage.classList.add('hidden');
-
-            if (allFamilyMembers.includes(enteredName)) {
-                if (userId === 'anonymous') {
-                    nameErrorMessage.textContent = "Authentication issue. Please try refreshing the page.";
-                    nameErrorMessage.classList.remove('hidden');
-                    return;
-                }
-                await saveUserProfile(userId, enteredName);
-                currentUserFamilyName = enteredName; // Ensure this is updated after successful save
-                nameModal.classList.add('hidden');
-                document.querySelector('main').classList.remove('hidden'); // Show the main app content
-                loadingSpinner.classList.remove('hidden'); 
-                fetchScheduleData(); 
-            } else {
-                nameErrorMessage.textContent = "Name does not match any family member. Please try again.";
-                nameErrorMessage.classList.remove('hidden');
-            }
-        }
 
         // Handle date picker changes
         function handleDateChange() {
@@ -1313,7 +1286,7 @@
             // If start date is changed and end date is empty or invalid, set end date to start + 1 day
             if (startDatePicker.value && (!endDatePicker.value || newEndDate.getTime() <= newStartDate.getTime())) {
                 newEndDate = new Date(newStartDate);
-                newEndDate.setUTCDate(newStartDate.getUTCDate() + 1); // Add one day
+                newEndDate.setUTCDate(newStartDate.getUTCDate() + 1); 
                 endDatePicker.value = newEndDate.toISOString().split('T')[0];
             }
 
@@ -1336,19 +1309,17 @@
 
             // When dates change, tasks are now blank by default
             scheduleData = createBlankScheduleData(defaultStartDate, defaultEndDate);
-            saveScheduleData(scheduleData, defaultStartDate, defaultEndDate, '', '', []); // Clear last assigned info and audit log on date change
+            saveScheduleData(scheduleData, defaultStartDate, defaultEndDate, '', '', []); 
             // UI will refresh via onSnapshot
         }
 
         function handleAssignTasks() {
             if (!currentUserFamilyName) {
-                nameModal.classList.remove('hidden');
-                familyNameInput.focus();
+                loginTriggerButton.click(); // Prompt user to enter name first
                 return;
             }
 
             if (scheduleData.length === 0) {
-                 // No current schedule range set, try to derive from pickers
                 const currentStartDate = new Date(startDatePicker.value);
                 const currentEndDate = new Date(endDatePicker.value);
                 if (isNaN(currentStartDate.getTime()) || isNaN(currentEndDate.getTime()) || currentStartDate > currentEndDate) {
@@ -1362,7 +1333,6 @@
             const assignedTasks = assignTasksAutomatically(scheduleData, defaultScheduleCycleTemplate);
             const now = new Date().toISOString();
             
-            // Clear existing audit log for a fresh assignment
             const newAuditLog = []; 
             
             saveScheduleData(assignedTasks, defaultStartDate, defaultEndDate, currentUserFamilyName, now, newAuditLog);
@@ -1373,37 +1343,17 @@
         function populatePurchaseBySelect(isModal = false) {
             const targetSelect = isModal ? modalPurchaseBySelect : purchaseBySelect;
             targetSelect.innerHTML = '';
-            let eligiblePurchasers = [];
-
-            // Determine if the current user is a household head
-            const isCurrentUserHead = householdHeads.includes(currentUserFamilyName);
-
-            if (isCurrentUserHead) {
-                // If current user is a household head, they can record purchases for:
-                // 1. All adults in their own household
-                // 2. Eva (regardless of household)
-                const userHouseholdMembers = family.households[currentUserFamilyName] ? family.households[currentUserFamilyName].members : [];
-                eligiblePurchasers = userHouseholdMembers.filter(member => family.adults.includes(member));
-                if (!eligiblePurchasers.includes("Eva")) { // Add Eva if not already present
-                    eligiblePurchasers.push("Eva");
-                }
-            } else if (family.adults.includes(currentUserFamilyName)) {
-                // If current user is an adult but not a household head, they can only record for themselves
-                eligiblePurchasers = [currentUserFamilyName];
-            } else {
-                // Children cannot record purchases
-                eligiblePurchasers = [];
-            }
             
-            eligiblePurchasers.sort().forEach(person => {
+            // Add all adults as options for 'Purchased By'
+            family.adults.sort().forEach(person => {
                 const option = document.createElement('option');
                 option.value = person;
                 option.textContent = person;
                 targetSelect.appendChild(option);
             });
 
-            // Automatically select the current logged-in user if they are among the eligible purchasers
-            if (eligiblePurchasers.includes(currentUserFamilyName)) {
+            // Automatically select the current logged-in user if their name is in the list of adults
+            if (family.adults.includes(currentUserFamilyName)) {
                 Array.from(targetSelect.options).forEach(option => {
                     option.selected = (option.value === currentUserFamilyName);
                 });
@@ -1414,14 +1364,13 @@
 
         function handleAddPurchase() {
             if (!currentUserFamilyName) {
-                nameModal.classList.remove('hidden');
-                familyNameInput.focus();
+                loginTriggerButton.click();
                 return;
             }
 
             const purchaseDateStr = modalPurchaseDateInput.value;
             const purchaseAmount = parseFloat(modalPurchaseAmountInput.value);
-            const purchaseCategory = modalPurchaseCategorySelect.value; // Get the selected category
+            const purchaseCategory = modalPurchaseCategorySelect.value; 
             const purchasedBy = Array.from(modalPurchaseBySelect.selectedOptions).map(option => option.value);
 
             if (!purchaseDateStr || isNaN(purchaseAmount) || purchaseAmount <= 0 || purchasedBy.length === 0 || !purchaseCategory) {
@@ -1429,30 +1378,8 @@
                 return;
             }
 
-            // Validation for eligible purchasers
-            const isCurrentUserHead = householdHeads.includes(currentUserFamilyName);
-            let allowedPurchasers = [];
-
-            if (isCurrentUserHead) {
-                allowedPurchasers = family.households[currentUserFamilyName].members.filter(member => family.adults.includes(member));
-                if (!allowedPurchasers.includes("Eva")) {
-                    allowedPurchasers.push("Eva");
-                }
-            } else if (family.adults.includes(currentUserFamilyName)) {
-                allowedPurchasers = [currentUserFamilyName];
-            }
-
-            const unauthorizedPurchases = purchasedBy.filter(p => !allowedPurchasers.includes(p));
-
-            if (unauthorizedPurchases.length > 0) {
-                const allowedNames = allowedPurchasers.join(', ');
-                alert(`You can only record purchases for yourself${isCurrentUserHead ? `, members of your family (${allowedNames.replace('Eva, ', '').replace(', Eva', '')})` : ''}${allowedPurchasers.includes("Eva") && currentUserFamilyName !== "Eva" ? ' or Eva' : ''}. You cannot record purchases for: ${unauthorizedPurchases.join(', ')}.`);
-                return;
-            }
-
-
             const purchaseDateObj = new Date(purchaseDateStr);
-            purchaseDateObj.setUTCHours(0, 0, 0, 0); // Normalize date
+            purchaseDateObj.setUTCHours(0, 0, 0, 0); 
 
             const holidayStartDate = new Date(defaultStartDate);
             holidayStartDate.setUTCHours(0,0,0,0);
@@ -1471,18 +1398,16 @@
             });
 
             if (foundDayIndex === -1) {
-                // This case should ideally be caught by the date range check above,
-                // but as a fallback, if a date within range isn't found in scheduleData (e.g. empty scheduleData)
                 alert("Could not find the corresponding day in the schedule for the selected purchase date. Please ensure the holiday schedule is generated or try a different date.");
                 return;
             }
 
             const newRecord = {
-                purchaser: purchasedBy.join(', '), // Store as comma-separated string for simplicity
+                purchaser: purchasedBy.join(', '), 
                 amount: purchaseAmount,
-                category: purchaseCategory, // Store the selected category
+                category: purchaseCategory, 
                 timestamp: new Date().toISOString(),
-                addedBy: currentUserFamilyName // Stored the logged-in user's name
+                addedBy: currentUserFamilyName 
             };
 
             scheduleData[foundDayIndex].shoppingRecords.push(newRecord);
@@ -1490,30 +1415,28 @@
             // Clear form and save data
             modalPurchaseDateInput.value = new Date().toISOString().split('T')[0];
             modalPurchaseAmountInput.value = '';
-            modalPurchaseCategorySelect.value = 'Daily Shopping'; // Reset to default category
+            modalPurchaseCategorySelect.value = 'Daily Shopping'; 
             Array.from(modalPurchaseBySelect.options).forEach(option => option.selected = false);
-            populatePurchaseBySelect(true); // Call for modal to re-select current user
+            populatePurchaseBySelect(true); 
 
-            addPurchaseModal.classList.add('hidden'); // Close the modal
+            addPurchaseModal.classList.add('hidden'); 
             
-            saveScheduleData(scheduleData, defaultStartDate, defaultEndDate, lastAssignmentInfo.dataset.lastAssignedBy || '', lastAssignmentInfo.dataset.lastAssignedOn || '', []); // Update audit log (though not strictly for purchases)
-            // refreshUI will be called by onSnapshot listener after save
+            saveScheduleData(scheduleData, defaultStartDate, defaultEndDate, lastAssignmentInfo.dataset.lastAssignedBy || '', lastAssignmentInfo.dataset.lastAssignedOn || '', []); 
         }
 
         function openEditPurchaseModal(dayIndex, recordIndex) {
             const dayRecord = scheduleData[dayIndex];
             const record = dayRecord.shoppingRecords[recordIndex];
 
-            // Set modal title for editing
             document.getElementById('add-purchase-modal-title').textContent = `Edit Purchase on ${dayRecord.date}`;
             modalAddPurchaseBtn.textContent = 'Save Changes';
             modalAddPurchaseBtn.onclick = () => saveEditedPurchase(dayIndex, recordIndex);
 
-            modalPurchaseDateInput.value = new Date(record.timestamp).toISOString().split('T')[0]; // Use record's date or inferred date
+            modalPurchaseDateInput.value = new Date(record.timestamp).toISOString().split('T')[0]; 
             modalPurchaseAmountInput.value = record.amount;
             modalPurchaseCategorySelect.value = record.category || 'Others';
 
-            populatePurchaseBySelect(true); // Populate with all eligible options
+            populatePurchaseBySelect(true); 
             const purchasers = record.purchaser.split(', ').map(p => p.trim());
             Array.from(modalPurchaseBySelect.options).forEach(option => {
                 option.selected = purchasers.includes(option.value);
@@ -1524,7 +1447,7 @@
 
         async function saveEditedPurchase(dayIndex, recordIndex) {
             const dayRecord = scheduleData[dayIndex];
-            const oldRecord = JSON.parse(JSON.stringify(dayRecord.shoppingRecords[recordIndex])); // Deep copy for audit
+            const oldRecord = JSON.parse(JSON.stringify(dayRecord.shoppingRecords[recordIndex])); 
 
             const purchaseDateStr = modalPurchaseDateInput.value;
             const purchaseAmount = parseFloat(modalPurchaseAmountInput.value);
@@ -1533,27 +1456,6 @@
 
             if (!purchaseDateStr || isNaN(purchaseAmount) || purchaseAmount <= 0 || purchasedBy.length === 0 || !purchaseCategory) {
                 alert("Please enter a valid date, amount, select a category, and select at least one purchaser.");
-                return;
-            }
-
-            // Validate that the selected purchasers are indeed eligible for the current user (same logic as add)
-            const isCurrentUserHead = householdHeads.includes(currentUserFamilyName);
-            let allowedPurchasers = [];
-
-            if (isCurrentUserHead) {
-                allowedPurchasers = family.households[currentUserFamilyName].members.filter(member => family.adults.includes(member));
-                if (!allowedPurchasers.includes("Eva")) {
-                    allowedPurchasers.push("Eva");
-                }
-            } else if (family.adults.includes(currentUserFamilyName)) {
-                allowedPurchasers = [currentUserFamilyName];
-            }
-
-            const unauthorizedPurchases = purchasedBy.filter(p => !allowedPurchasers.includes(p));
-
-            if (unauthorizedPurchases.length > 0) {
-                const allowedNames = allowedPurchasers.join(', ');
-                alert(`You can only record purchases for yourself${isCurrentUserHead ? `, members of your family (${allowedNames.replace('Eva, ', '').replace(', Eva', '')})` : ''}${allowedPurchasers.includes("Eva") && currentUserFamilyName !== "Eva" ? ' or Eva' : ''}. You cannot record purchases for: ${unauthorizedPurchases.join(', ')}.`);
                 return;
             }
 
@@ -1570,19 +1472,16 @@
                 return;
             }
 
-
             const updatedRecord = {
                 purchaser: purchasedBy.join(', '),
                 amount: purchaseAmount,
                 category: purchaseCategory,
-                timestamp: new Date().toISOString(), // Update timestamp for modification
-                addedBy: currentUserFamilyName // Keep original addedBy or update to current user if desired
+                timestamp: new Date().toISOString(), 
+                addedBy: currentUserFamilyName 
             };
 
-            // Update the record in scheduleData
             dayRecord.shoppingRecords[recordIndex] = updatedRecord;
 
-            // Log the change
             const docRef = getScheduleDocRef();
             let currentAuditLog = [];
             if (docRef) {
@@ -1611,10 +1510,8 @@
 
         function openDeleteConfirmModal(dayIndex, recordIndex) {
             deleteConfirmModal.classList.remove('hidden');
-            // Store indices in the confirm button's dataset for access in handler
             confirmDeleteBtn.dataset.dayIndex = dayIndex;
             confirmDeleteBtn.dataset.recordIndex = recordIndex;
-            // Attach the handler here to ensure it's fresh and uses current data
             confirmDeleteBtn.onclick = handleDeleteConfirmed;
         }
 
@@ -1629,11 +1526,10 @@
             }
 
             const dayRecord = scheduleData[dayIndex];
-            const deletedRecord = JSON.parse(JSON.stringify(dayRecord.shoppingRecords[recordIndex])); // Deep copy for audit
+            const deletedRecord = JSON.parse(JSON.stringify(dayRecord.shoppingRecords[recordIndex])); 
 
             dayRecord.shoppingRecords.splice(recordIndex, 1);
 
-            // Log the deletion
             const docRef = getScheduleDocRef();
             let currentAuditLog = [];
             if (docRef) {
@@ -1660,10 +1556,11 @@
             saveScheduleData(scheduleData, defaultStartDate, defaultEndDate, lastAssignmentInfo.dataset.lastAssignedBy || '', lastAssignmentInfo.dataset.lastAssignedOn || '', currentAuditLog);
         }
 
+        // Variable to store calculated family balances for settlement summary
+        let currentFamilyBalances = {};
 
         function renderShoppingSummaryTables() {
             let totalShoppingSpent = 0;
-            // Initialize total spending for each household head
             const householdSpending = {}; 
             householdHeads.forEach(head => householdSpending[head] = 0);
 
@@ -1688,9 +1585,8 @@
                     `;
                     totalShoppingSpent += record.amount;
 
-                    // Distribute amount among actual purchasers (adults) and track by household head
                     const purchasers = record.purchaser.split(', ').map(p => p.trim());
-                    const actualAdultPurchasers = purchasers.filter(p => family.adults.includes(p)); // Only adults contribute to the spending
+                    const actualAdultPurchasers = purchasers.filter(p => family.adults.includes(p)); 
                     
                     if (actualAdultPurchasers.length > 0) {
                         const amountPerActualPurchaser = record.amount / actualAdultPurchasers.length;
@@ -1704,7 +1600,6 @@
                 });
             });
 
-            // Shopping Distribution Logic (for households only)
             shoppingDistributionTableBody.innerHTML = '';
             
             let totalUnits = 0;
@@ -1715,20 +1610,20 @@
             const fairSharePerUnit = totalUnits > 0 ? totalShoppingSpent / totalUnits : 0;
 
             const familyBalances = {};
-            householdHeads.sort().forEach(head => { // Sort for consistent display
+            householdHeads.sort().forEach(head => { 
                 const expectedContribution = family.households[head].units * fairSharePerUnit;
                 const actualContribution = householdSpending[head];
-                const balance = actualContribution - expectedContribution; // Positive means overpaid, negative means underpaid
+                const balance = actualContribution - expectedContribution; 
                 familyBalances[head] = balance;
 
                 const row = shoppingDistributionTableBody.insertRow();
                 row.className = 'border-b border-slate-200 hover:bg-slate-50';
                 let statusClass = '';
-                if (balance > 0.01) { // Overpaid
+                if (balance > 0.01) { 
                     statusClass = 'text-green-600 font-semibold';
-                } else if (balance < -0.01) { // Underpaid
+                } else if (balance < -0.01) { 
                     statusClass = 'text-red-600 font-semibold';
-                } else { // Balanced
+                } else { 
                     statusClass = 'text-slate-500';
                 }
 
@@ -1739,7 +1634,6 @@
                 `;
             });
             
-            // Add a footer row for total expenses and cost per unit
             const totalRow = shoppingDistributionTableBody.insertRow();
             totalRow.className = 'font-bold bg-slate-100 border-t-2 border-slate-300';
             totalRow.innerHTML = `
@@ -1748,31 +1642,110 @@
                 <td class="py-3 px-6 text-right">${getTranslation('perPersonCost')} ${fairSharePerUnit.toFixed(2)}</td>
             `;
 
-            // Update titles for shopping sections
             document.getElementById('shopping-calc-title').textContent = getTranslation('shoppingCalcTitle');
-            // document.getElementById('add-purchase-modal-title').textContent = getTranslation('addPurchaseTitle'); // Modal title handled in open fn
             document.getElementById('modal-purchase-date').previousElementSibling.textContent = getTranslation('purchaseDate');
             document.getElementById('modal-purchase-amount').previousElementSibling.textContent = getTranslation('amountSpent');
             document.getElementById('modal-purchase-category').previousElementSibling.textContent = getTranslation('categoryCol');
             document.getElementById('modal-purchase-by').previousElementSibling.textContent = getTranslation('purchasedBy');
-            // document.getElementById('modal-add-purchase-btn').textContent = getTranslation('addPurchase'); // Button text handled in open fn
             document.getElementById('shopping-chart-title').textContent = getTranslation('shoppingChartTitle');
             document.getElementById('shopping-chart-desc').textContent = getTranslation('shoppingChartDesc');
             document.querySelector('#daily-shopping-table-body').closest('table').querySelector('thead tr th:nth-child(1)').textContent = getTranslation('dateCol');
             document.querySelector('#daily-shopping-table-body').closest('table').querySelector('thead tr th:nth-child(2)').textContent = getTranslation('purchasersCol');
             document.querySelector('#daily-shopping-table-body').closest('table').querySelector('thead tr th:nth-child(3)').textContent = getTranslation('amountCol');
-            document.querySelector('#daily-shopping-table-body').closest('table').querySelector('thead tr th:nth-child(4)').textContent = getTranslation('categoryCol'); // Updated header
-            document.querySelector('#daily-shopping-table-body').closest('table').querySelector('thead tr th:nth-child(5)').textContent = getTranslation('addedByCol'); // Updated header
-            document.querySelector('#daily-shopping-table-body').closest('table').querySelector('thead tr th:nth-child(6)').textContent = getTranslation('actionsCol'); // New header
+            document.querySelector('#daily-shopping-table-body').closest('table').querySelector('thead tr th:nth-child(4)').textContent = getTranslation('categoryCol'); 
+            document.querySelector('#daily-shopping-table-body').closest('table').querySelector('thead tr th:nth-child(5)').textContent = getTranslation('addedByCol'); 
+            document.querySelector('#daily-shopping-table-body').closest('table').querySelector('thead tr th:nth-child(6)').textContent = getTranslation('actionsCol'); 
             document.getElementById('shopping-distribution-table-title').textContent = getTranslation('shoppingDistributionTableTitle');
             document.getElementById('shopping-distribution-desc').textContent = getTranslation('shoppingDistributionDesc');
             document.querySelector('#shopping-distribution-table-body').closest('table').querySelector('thead tr th:nth-child(1)').textContent = getTranslation('familyMemberCol');
             document.querySelector('#shopping-distribution-table-body').closest('table').querySelector('thead tr th:nth-child(2)').textContent = getTranslation('totalSpentCol');
             document.querySelector('#shopping-distribution-table-body').closest('table').querySelector('thead tr th:nth-child(3)').textContent = getTranslation('oweOwedCol');
+
+            currentFamilyBalances = familyBalances; // Store for settlement summary
         }
 
+        // New function to generate the settlement summary text
+        function generateSettlementSummary() {
+            settlementSummaryContent.innerHTML = '';
+            document.getElementById('settlement-summary-container').querySelector('h3').textContent = getTranslation('settlementSummaryTitle');
+
+            if (Object.keys(currentFamilyBalances).length === 0) {
+                return;
+            }
+
+            let netPayers = []; // [ [head, debt_amount], ... ]
+            let netReceivers = []; // [ [head, credit_amount], ... ]
+
+            for (const head in currentFamilyBalances) {
+                const balance = currentFamilyBalances[head];
+                if (balance < -0.01) {
+                    netPayers.push([head, Math.abs(balance)]);
+                } else if (balance > 0.01) {
+                    netReceivers.push([head, balance]);
+                }
+            }
+
+            netPayers.sort((a, b) => b[1] - a[1]); // Largest debt first
+            netReceivers.sort((a, b) => b[1] - a[1]); // Largest credit first
+
+            const statements = [];
+            const finalReceiversAmounts = {}; // To sum up what each receiver actually gets
+
+            let payerIndex = 0;
+            let receiverIndex = 0;
+
+            while (payerIndex < netPayers.length && receiverIndex < netReceivers.length) {
+                let [payerHead, payerDebt] = netPayers[payerIndex];
+                let [receiverHead, receiverCredit] = netReceivers[receiverIndex];
+
+                const amountToSettle = Math.min(payerDebt, receiverCredit);
+
+                statements.push(
+                    getTranslation('owesTo')
+                        .replace('{payerFamily}', family.households[payerHead].familyName)
+                        .replace('{amount}', amountToSettle.toFixed(2))
+                        .replace('{receiverFamily}', family.households[receiverHead].familyName)
+                );
+
+                finalReceiversAmounts[receiverHead] = (finalReceiversAmounts[receiverHead] || 0) + amountToSettle;
+
+                netPayers[payerIndex][1] -= amountToSettle; // Reduce payer's debt
+                netReceivers[receiverIndex][1] -= amountToSettle; // Reduce receiver's credit
+
+                if (netPayers[payerIndex][1] < 0.01) { // If payer's debt is settled
+                    payerIndex++;
+                }
+                if (netReceivers[receiverIndex][1] < 0.01) { // If receiver's credit is satisfied
+                    receiverIndex++;
+                }
+            }
+            
+            // Add summary for net receivers
+            for (const head in finalReceiversAmounts) {
+                if (finalReceiversAmounts[head] > 0.01) {
+                    statements.push(
+                        getTranslation('netReceives')
+                            .replace('{receiverFamily}', family.households[head].familyName)
+                            .replace('{amount}', finalReceiversAmounts[head].toFixed(2))
+                    );
+                }
+            }
+
+            if (statements.length > 0) {
+                statements.forEach(stmt => {
+                    const p = document.createElement('p');
+                    p.textContent = stmt;
+                    settlementSummaryContent.appendChild(p);
+                });
+            } else {
+                const p = document.createElement('p');
+                p.textContent = "All expenses are balanced."; // Or another appropriate message
+                settlementSummaryContent.appendChild(p);
+            }
+        }
+
+
         function createShoppingCostChart() {
-            // This chart will visualize the net balance for each household head
             const householdSpending = {};
             householdHeads.forEach(head => householdSpending[head] = 0);
 
@@ -1801,11 +1774,10 @@
             const fairSharePerUnit = totalUnits > 0 ? totalShoppingSpent / totalUnits : 0;
 
             const labels = [];
-            const data = []; // This will be the net balance
+            const data = []; 
             const backgroundColors = [];
             const borderColors = [];
 
-            // Sort household heads by their family name for consistent chart display
             const sortedHouseholdHeads = householdHeads.sort((a, b) => {
                 const nameA = family.households[a].familyName.toUpperCase();
                 const nameB = family.households[b].familyName.toUpperCase();
@@ -1821,14 +1793,14 @@
                 const balance = actualContribution - expectedContribution;
                 data.push(balance);
 
-                if (balance > 0.01) { // Overpaid (will receive)
-                    backgroundColors.push('#20c997'); // Green
+                if (balance > 0.01) { 
+                    backgroundColors.push('#20c997'); 
                     borderColors.push('#17a2b8');
-                } else if (balance < -0.01) { // Underpaid (will owe)
-                    backgroundColors.push('#fd7e14'); // Orange
+                } else if (balance < -0.01) { 
+                    backgroundColors.push('#fd7e14'); 
                     borderColors.push('#e65100');
                 } else {
-                    backgroundColors.push('#94a3b8'); // Gray (balanced)
+                    backgroundColors.push('#94a3b8'); 
                     borderColors.push('#64748b');
                 }
             });
@@ -1874,9 +1846,9 @@
                                     if (context.parsed.x !== null) {
                                         const value = context.parsed.x;
                                         if (value > 0.01) {
-                                            label += `${new Intl.NumberFormat(currentLanguage, { style: 'currency', currency: 'EUR' }).format(value)} (${getTranslation('owesYou')})`; // "owes you"
+                                            label += `${new Intl.NumberFormat(currentLanguage, { style: 'currency', currency: 'EUR' }).format(value)} (${getTranslation('owesYou')})`; 
                                         } else if (value < -0.01) {
-                                            label += `${new Intl.NumberFormat(currentLanguage, { style: 'currency', currency: 'EUR' }).format(Math.abs(value))} (${getTranslation('youOwe')})`; // "you owe"
+                                            label += `${new Intl.NumberFormat(currentLanguage, { style: 'currency', currency: 'EUR' }).format(Math.abs(value))} (${getTranslation('youOwe')})`; 
                                         } else {
                                             label += 'Balanced';
                                         }
@@ -1916,7 +1888,7 @@
 
             scheduleData.forEach(day => {
                 day.shoppingRecords.forEach(record => {
-                    const category = record.category || "Others"; // Default to 'Others' if category is missing
+                    const category = record.category || "Others"; 
                     categoryTotals[category] = (categoryTotals[category] || 0) + record.amount;
                 });
             });
@@ -1924,7 +1896,6 @@
             const labels = Object.keys(categoryTotals);
             const data = Object.values(categoryTotals);
 
-            // Filter out categories with 0 spend for cleaner chart
             const filteredLabels = [];
             const filteredData = [];
             for (let i = 0; i < labels.length; i++) {
@@ -1934,7 +1905,6 @@
                 }
             }
 
-            // Generate vibrant and distinct colors for pie slices
             const pieChartColors = [
                 '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
                 '#C9CBCF', '#7FDBFF', '#00FFFF', '#FFD700', '#ADFF2F', '#FF4500'
@@ -1965,7 +1935,7 @@
                         legend: {
                             position: 'right',
                             labels: {
-                                color: '#475569', // slate-600
+                                color: '#475569', 
                                 font: {
                                     size: 12
                                 }
@@ -1997,7 +1967,6 @@
                 }
             });
 
-            // Update translations for category chart titles
             document.getElementById('category-chart-title').textContent = getTranslation('categoryChartTitle');
             document.getElementById('category-chart-desc').textContent = getTranslation('categoryChartDesc');
         }
@@ -2027,10 +1996,11 @@
             currentLanguage = lang;
             document.documentElement.lang = lang; 
             refreshUI(); 
-            // Update name modal translations again after language change
             nameModalTitle.textContent = getTranslation('nameModalTitle');
             nameModalDescription.textContent = getTranslation('nameModalDescription');
             nameAuditInfo.textContent = getTranslation('nameAuditInfo');
+            // Update greeting immediately
+            updateGreetingDisplay();
         }
 
         function populateDaySelector() {
@@ -2055,11 +2025,10 @@
                 option.textContent = person;
                 personFilter.appendChild(option);
             });
-            // Ensure the filter value remains selected if it was previously set and is still valid
             if (personFilter.dataset.currentSelectedValue && allFamilyMembers.includes(personFilter.dataset.currentSelectedValue)) {
                 personFilter.value = personFilter.dataset.currentSelectedValue;
             } else {
-                personFilter.value = 'all'; // Default to 'Show All'
+                personFilter.value = 'all'; 
             }
         }
 
@@ -2101,9 +2070,12 @@
                 let peopleHTML = '';
                 if (Array.isArray(people) && people.length > 0) {
                     peopleHTML = people.map(p => `<span class="inline-block bg-slate-200 text-slate-700 text-sm font-medium mr-2 mb-2 px-3 py-1 rounded-full">${p}</span>`).join('');
-                } else if (typeof people === 'string' && people !== '') { 
+                } else if (typeof people === 'string' && people !== '' && people !== 'All') { // Added 'All' exclusion
                     peopleHTML = `<span class="inline-block bg-slate-200 text-slate-700 text-sm font-medium mr-2 mb-2 px-3 py-1 rounded-full">${people}</span>`;
+                } else if (people === 'All') { // Handle 'All Adults' or 'All'
+                    peopleHTML = `<span class="inline-block bg-slate-200 text-slate-700 text-sm font-medium mr-2 mb-2 px-3 py-1 rounded-full">All Adults</span>`;
                 }
+
 
                 card.innerHTML = `
                     <div class="text-4xl mb-3 text-teal-600">${icon}</div>
@@ -2135,7 +2107,6 @@
             taskGrid.appendChild(createTeamTaskCard('cleaningTable', dayData.cleaning, '🧽'));
             taskGrid.appendChild(createTaskCard('houseCleaning', dayData.houseCleaning, '🧹'));
             
-            // Modified Shopping card to show total spent and purchasers from shoppingRecords
             const totalShoppingForDay = (dayData.shoppingRecords || []).reduce((sum, record) => sum + record.amount, 0);
             const shoppingPurchasers = Array.from(new Set((dayData.shoppingRecords || []).flatMap(record => record.purchaser.split(', ').map(p => p.trim()))));
             
@@ -2171,7 +2142,6 @@
         }
         
         function displayPersonalTasks(person) {
-            // Store the current selection so it can be re-applied after refreshUI
             personFilter.dataset.currentSelectedValue = person;
 
             const taskList = document.getElementById('personal-task-list');
@@ -2199,14 +2169,13 @@
                 checkTask('cleaningTable', day.cleaning);
                 checkTask('houseCleaning', day.houseCleaning);
                 
-                // For shopping, check both assigned shopping task and shopping records
                 if (day.shopping && day.shopping.includes(person)) {
                      assignedTasks.push({date: day.date, task: `${getTranslation('shopping')} (Assigned Task)`});
                 }
                 if (day.shoppingRecords && day.shoppingRecords.some(record => record.purchaser.includes(person))) {
                     const totalSpentByPersonOnDay = day.shoppingRecords
                         .filter(record => record.purchaser.includes(person))
-                        .reduce((sum, record) => sum + record.amount / record.purchaser.split(',').length, 0); // Distribute cost if shared
+                        .reduce((sum, record) => sum + record.amount / record.purchaser.split(',').length, 0); 
                     if (totalSpentByPersonOnDay > 0) {
                         assignedTasks.push({date: day.date, task: `${getTranslation('shopping')} (Spent: ${totalSpentByPersonOnDay.toFixed(2)}€)`});
                     }
@@ -2247,12 +2216,12 @@
                                 individualTaskCounts[p]++;
                             }
                         });
-                    } else if (typeof assigned === 'string' && assigned !== '') {
+                    } else if (typeof assigned === 'string' && assigned !== '' && assigned !== 'All') { // Exclude 'All' if it's a string
                         if (individualTaskCounts[assigned] !== undefined) {
                             individualTaskCounts[assigned]++;
                         }
                     } else if (typeof assigned === 'object' && assigned !== null) {
-                        if (assigned.adult && individualTaskCounts[assigned.adult] !== undefined) {
+                        if (assigned.adult && assigned.adult !== 'All' && individualTaskCounts[assigned.adult] !== undefined) {
                             individualTaskCounts[assigned.adult]++;
                         }
                         if (Array.isArray(assigned.children)) {
@@ -2262,21 +2231,25 @@
                                 }
                             });
                         }
+                        // If 'All' is an adult lead, count all adults. This depends on context.
+                        // For simplicity, if a task is assigned to 'All' (e.g., Cooking), it means all adults.
+                        if (assigned.adult === 'All' && taskNameKey === 'cleaningTable') { // Only 'Cleaning the Table' had 'All' adult lead in template
+                            family.adults.forEach(adult => individualTaskCounts[adult]++);
+                        }
                     }
                 };
-                countAssignments(day.cooking);
-                countAssignments(day.dressing);
-                countAssignments(day.cleaning);
-                countAssignments(day.houseCleaning);
-                countAssignments(day.shopping);
+                countAssignments(day.cooking, 'cooking');
+                countAssignments(day.dressing, 'dressingTable');
+                countAssignments(day.cleaning, 'cleaningTable');
+                countAssignments(day.houseCleaning, 'houseCleaning');
+                countAssignments(day.shopping, 'shopping');
             });
 
-            // Prepare labels and data, sorted by individual name
             const labels = Object.keys(individualTaskCounts).sort();
             const data = labels.map(label => individualTaskCounts[label]);
 
-            const backgroundColors = labels.map((_, i) => '#14b8a6'); // teal-500
-            const borderColors = labels.map((_, i) => '#0d9488'); // teal-600
+            const backgroundColors = labels.map((_, i) => '#14b8a6'); 
+            const borderColors = labels.map((_, i) => '#0d9488'); 
             
             const ctx = document.getElementById('task-distribution-chart').getContext('2d');
             if (window.taskDistributionChart) {
@@ -2334,7 +2307,6 @@
             });
         }
 
-        // Updated function: All adults are now eligible for all adult tasks in edit mode
         function getEligiblePeople(taskType) {
             switch (taskType) {
                 case 'cooking':
@@ -2343,7 +2315,14 @@
                     return family.adults; 
                 case 'dressing': 
                 case 'cleaning': 
-                    return family.adults;
+                    // For dressing/cleaning, allow 'All' as an option for adult lead
+                    // Check if the original template has 'All' as a valid option for these
+                    // For this app, the template *does* use 'All' for cleaning adult lead on the last day.
+                    const adultOptions = [...family.adults];
+                    // if (taskType === 'cleaning') { // Or if needed for other specific tasks
+                    //     adultOptions.push('All');
+                    // }
+                    return adultOptions;
                 case 'children-dressing-cleaning': 
                     return family.children;
                 default:
@@ -2404,8 +2383,7 @@
 
         function openEditModal(dayIndex) {
             if (!currentUserFamilyName) {
-                nameModal.classList.remove('hidden');
-                familyNameInput.focus();
+                loginTriggerButton.click();
                 return;
             }
             currentDayIndex = dayIndex;
@@ -2413,7 +2391,6 @@
             modalDateDisplay.textContent = `${getTranslation('days')[dayData.day] || dayData.day}, ${dayData.date}`;
             editFormContent.innerHTML = '';
 
-            // Store original values for audit logging
             const originalAssignments = {
                 cooking: JSON.parse(JSON.stringify(dayData.cooking)),
                 dressing: JSON.parse(JSON.stringify(dayData.dressing)),
@@ -2424,24 +2401,17 @@
             editFormContent.dataset.originalAssignments = JSON.stringify(originalAssignments);
 
 
-            // Cooking Task - All adults eligible, multiple select
-            const cookingPeople = Array.isArray(dayData.cooking) ? dayData.cooking : (typeof dayData.cooking === 'string' ? [dayData.cooking] : []);
-            editFormContent.appendChild(createSelectElement(`edit-cooking`, getEligiblePeople('cooking'), cookingPeople, true, true, getTranslation('cooking')));
+            editFormContent.appendChild(createSelectElement(`edit-cooking`, getEligiblePeople('cooking'), dayData.cooking, true, true, getTranslation('cooking')));
 
-            // Dressing the Table Task - Adult lead (single select) + Children (multiple select)
             editFormContent.appendChild(createSelectElement(`edit-dressing-adult`, getEligiblePeople('dressing'), dayData.dressing.adult, false, false, getTranslation('dressingAdultLead')));
             editFormContent.appendChild(createSelectElement(`edit-dressing-children`, getEligiblePeople('children-dressing-cleaning'), dayData.dressing.children, true, true, getTranslation('dressingChildren')));
 
-            // Cleaning the Table Task - Adult lead (single select) + Children (multiple select)
             editFormContent.appendChild(createSelectElement(`edit-cleaning-adult`, getEligiblePeople('cleaning'), dayData.cleaning.adult, false, false, getTranslation('cleaningAdultLead')));
             editFormContent.appendChild(createSelectElement(`edit-cleaning-children`, getEligiblePeople('children-dressing-cleaning'), dayData.cleaning.children, true, true, getTranslation('cleaningChildren')));
 
-            // House Cleaning Task - Single adult select
             editFormContent.appendChild(createSelectElement(`edit-houseCleaning`, getEligiblePeople('houseCleaning'), dayData.houseCleaning, false, false, getTranslation('houseCleaning')));
 
-            // Shopping Task (assigned people) - All adults eligible, multiple select
-            const shoppingPeople = Array.isArray(dayData.shopping) ? dayData.shopping : (typeof dayData.shopping === 'string' ? [dayData.shopping] : []);
-            editFormContent.appendChild(createSelectElement(`edit-shopping`, getEligiblePeople('shopping'), shoppingPeople, true, true, getTranslation('shopping')));
+            editFormContent.appendChild(createSelectElement(`edit-shopping`, getEligiblePeople('shopping'), dayData.shopping, true, true, getTranslation('shopping')));
 
             editModal.classList.remove('hidden');
         }
@@ -2451,7 +2421,6 @@
             const originalAssignments = JSON.parse(editFormContent.dataset.originalAssignments);
             const now = new Date().toISOString();
             
-            // Fetch current audit log from Firestore to append new changes
             const docRef = getScheduleDocRef();
             let currentAuditLog = [];
             if (docRef) {
@@ -2481,7 +2450,6 @@
                 shopping: { type: 'shopping', current: dayData.shopping, new: getSelectedValues('edit-shopping', true) }
             };
 
-            // Compare and log changes
             for (const key in tasksToLog) {
                 const task = tasksToLog[key];
                 const oldVal = originalAssignments[key];
@@ -2489,9 +2457,9 @@
 
                 let changed = false;
                 if (Array.isArray(oldVal) || Array.isArray(newVal)) {
-                    const oldStr = Array.isArray(oldVal) ? oldVal.sort().join(',') : String(oldVal);
-                    const newStr = Array.isArray(newVal) ? newVal.sort().join(',') : String(newVal);
-                    if (oldStr !== newStr) {
+                    const oldArr = Array.isArray(oldVal) ? oldVal.sort() : [String(oldVal)];
+                    const newArr = Array.isArray(newVal) ? newVal.sort() : [String(newVal)];
+                    if (oldArr.join(',') !== newArr.join(',')) {
                         changed = true;
                     }
                 } else if (typeof oldVal === 'object' && oldVal !== null && typeof newVal === 'object' && newVal !== null) {
@@ -2516,7 +2484,6 @@
                 }
             }
 
-            // Update local scheduleData with new values
             dayData.cooking = tasksToLog.cooking.new;
             dayData.dressing = tasksToLog.dressing.new;
             dayData.cleaning = tasksToLog.cleaning.new;
@@ -2536,8 +2503,7 @@
 
         async function openHistoryModal() {
             if (!currentUserFamilyName) {
-                nameModal.classList.remove('hidden');
-                familyNameInput.focus();
+                loginTriggerButton.click();
                 return;
             }
 
@@ -2570,19 +2536,18 @@
                         const oldParsed = JSON.parse(log.oldValue);
                         const newParsed = JSON.parse(log.newValue);
                         
-                        if (log.taskType === 'Purchase' || log.taskType === 'Purchase Deletion') { // Special handling for purchase log
+                        if (log.taskType === 'Purchase' || log.taskType === 'Purchase Deletion') { 
                             oldValFormatted = `Amount: ${oldParsed.amount}, By: ${oldParsed.purchaser}, Category: ${oldParsed.category}`;
                             newValFormatted = log.newValue === 'DELETED' ? 'DELETED' : `Amount: ${newParsed.amount}, By: ${newParsed.purchaser}, Category: ${newParsed.category}`;
                         } else if (Array.isArray(oldParsed) || typeof oldParsed === 'object') {
-                            oldValFormatted = Array.isArray(oldParsed) ? oldParsed.join(', ') : (oldParsed.adult ? `${oldParsed.adult} (+ ${oldParsed.children.join(', ')})` : JSON.stringify(oldParsed));
+                            oldValFormatted = Array.isArray(oldParsed) ? oldParsed.join(', ') : (oldParsed.adult ? `${oldParsed.adult} (+ ${oldParsed.children.join(', ')})` : (oldParsed === '' ? 'None' : JSON.stringify(oldParsed)));
                             if (oldValFormatted === '') oldValFormatted = 'None';
                         }
                         if (Array.isArray(newParsed) || typeof newParsed === 'object') {
-                             newValFormatted = Array.isArray(newParsed) ? newParsed.join(', ') : (newParsed.adult ? `${newParsed.adult} (+ ${newParsed.children.join(', ')})` : JSON.stringify(newParsed));
+                             newValFormatted = Array.isArray(newParsed) ? newParsed.join(', ') : (newParsed.adult ? `${newParsed.adult} (+ ${newParsed.children.join(', ')})` : (newParsed === '' ? 'None' : JSON.stringify(newParsed)));
                              if (newValFormatted === '') newValFormatted = 'None';
                         }
                     } catch (e) {
-                        // Fallback if JSON parsing fails
                         oldValFormatted = log.oldValue === '' ? 'None' : log.oldValue;
                         newValFormatted = log.newValue === '' ? 'None' : log.newValue;
                     }
