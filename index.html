@@ -160,7 +160,7 @@
             <p id="last-assignment-info" class="mt-4 text-sm text-slate-600"></p>
         </div>
 
-        <main>
+        <main class="hidden"> <!-- Initially hidden until authenticated -->
             <div id="loading-spinner" class="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-40 hidden">
                 <div class="spinner"></div>
                 <p class="ml-4 text-slate-700">Loading data...</p>
@@ -435,7 +435,7 @@
                     "Wednesday": "Mercredi",
                     "Thursday": "Jeudi",
                     "Friday": "Vendredi",
-                    "Saturday": "Samedi",
+                    "Saturday": "Sábado",
                     "Sunday": "Dimanche",
                     "Monday": "Lundi"
                 },
@@ -689,47 +689,32 @@
                 db = app.firestore(); 
                 auth = app.auth();    
 
-                // Use onAuthStateChanged to react to any Firebase authentication state, including anonymous.
+                // The onAuthStateChanged listener is still important for getting the Firebase User ID.
                 auth.onAuthStateChanged(async (user) => {
                     if (user) {
-                        // A Firebase user (could be anonymous from Canvas environment or after custom login logic)
                         userId = user.uid;
                         userIdDisplay.textContent = `User ID: ${userId}`;
-                        
-                        // Check if the user has a family name recorded in Firestore
-                        await fetchUserProfile(userId);
-
-                        // If user is authenticated by Firebase but no family name is set, prompt for it.
-                        // Otherwise, hide all login/name modals and load the app.
-                        if (!currentUserFamilyName) {
-                            loginModal.classList.add('hidden'); // Ensure login is hidden
-                            nameModal.classList.remove('hidden'); // Show name input
-                        } else {
-                            loginModal.classList.add('hidden'); 
-                            nameModal.classList.add('hidden');
-                            loadingSpinner.classList.remove('hidden'); // Show spinner while data loads
-                            fetchScheduleData(); // Start fetching data after successful auth and name lookup
-                        }
+                        // We do NOT hide the login modal here. That's for handleLogin()
+                        // or if the user profile is already set (meaning they logged in before).
+                        await fetchUserProfile(userId); // Fetch profile to see if name is set
                     } else {
-                        // No Firebase user authenticated yet. Show the custom login modal.
-                        userId = 'anonymous';
+                        userId = 'anonymous'; // No authenticated user from Firebase (e.g., no initialAuthToken)
                         userIdDisplay.textContent = `User ID: Anonymous`;
-                        loginModal.classList.remove('hidden'); 
-                        nameModal.classList.add('hidden'); 
-                        loadingSpinner.classList.add('hidden'); 
-                        // The app content will not be loaded until a user is logged in via the custom modal.
+                        // Ensure login modal is visible if no user from Firebase and no custom login yet.
+                        // This state is fine; the custom login will handle showing the main app.
                     }
                 });
 
-                // Attempt to sign in anonymously if no initial auth token is provided.
-                // This will trigger onAuthStateChanged to process the user.
+                // Attempt to sign in anonymously *only if no initial auth token is provided by the environment*.
+                // This ensures a Firebase user is always available for Firestore operations when the app is running.
                 if (!initialAuthToken) {
                     try {
                         await auth.signInAnonymously();
-                        console.log("Signed in anonymously to Firebase.");
+                        console.log("Signed in anonymously to Firebase for data persistence.");
                     } catch (error) {
                         console.error("Firebase anonymous sign-in failed:", error);
-                        // If anonymous sign-in fails, the login modal will remain visible by onAuthStateChanged.
+                        // This error indicates a deeper issue with Firebase setup or network.
+                        // The custom login won't fix this underlying Firebase connectivity problem.
                     }
                 }
             } else {
@@ -739,6 +724,7 @@
                 loadingSpinner.classList.add('hidden');
                 // In local mode, just start with default dates and blank schedule
                 scheduleData = createBlankScheduleData(defaultStartDate, defaultEndDate);
+                document.querySelector('main').classList.remove('hidden'); // Show main content for local mode
                 refreshUI();
             }
         }
@@ -752,12 +738,20 @@
                 if (doc.exists && doc.data().familyName) {
                     currentUserFamilyName = doc.data().familyName;
                     console.log("Fetched user family name:", currentUserFamilyName);
+                    // If family name exists, hide login/name modals and show main app
+                    loginModal.classList.add('hidden');
+                    nameModal.classList.add('hidden');
+                    document.querySelector('main').classList.remove('hidden');
+                    loadingSpinner.classList.remove('hidden'); // Show spinner while data loads
+                    fetchScheduleData(); // Start fetching data after successful auth and name lookup
                 } else {
-                    currentUserFamilyName = ''; // No name found
+                    currentUserFamilyName = ''; // No name found, user needs to enter it
+                    // Keep login modal visible or show name modal if login passed
                 }
             } catch (error) {
                 console.error("Error fetching user profile:", error);
                 currentUserFamilyName = '';
+                // If profile fetch fails, user still needs to go through name entry if logged in
             }
         }
 
@@ -835,13 +829,8 @@
             }, (error) => {
                 console.error("Error fetching Firestore schedule:", error);
                 loadingSpinner.classList.add('hidden');
-                // Fallback will use local blank data if Firestore fails, but requires user to be logged in (custom login part)
-                // If this error happens AFTER login, it implies a Firestore permission issue, not an Auth provider issue.
             });
         }
-
-        // Fallback removed, as Firebase Auth and Firestore should now always attempt to connect
-        // and errors will be handled, preventing a "silent" fallback to local data.
 
         // Save data to Firestore - now includes start/end dates, last assigned info, and audit log
         async function saveScheduleData(data, currentStart, currentEnd, lastAssignedBy = '', lastAssignedOn = '', auditLog = []) {
@@ -940,7 +929,9 @@
 
             closeHistoryBtn.addEventListener('click', () => historyModal.classList.add('hidden'));
 
-            await initializeFirebase(); // This will trigger Firebase init and handle initial auth state
+            // IMPORTANT: Initialize Firebase, but do NOT automatically show the app content here.
+            // The visibility is controlled by the custom login flow.
+            await initializeFirebase(); 
         });
 
         // Custom application login logic (separate from Firebase Auth providers)
@@ -950,21 +941,28 @@
             loginErrorMessage.classList.add('hidden'); 
 
             if (username === 'GARSI' && password === 'Quiroga2025') {
-                // If custom credentials match, proceed as if logged in.
-                // Firebase anonymous auth or initial token would have already provided a Firebase user.
-                loginModal.classList.add('hidden');
-                // The onAuthStateChanged listener in initializeFirebase will handle showing name modal or app.
-                // If it hasn't already signed in anonymously, force it.
-                if (!auth.currentUser) {
+                // Custom login successful.
+                loginModal.classList.add('hidden'); // Hide the login modal
+
+                // Now, check if a Firebase user exists (it should, due to anonymous sign-in in initializeFirebase)
+                // or try to sign in anonymously if somehow not yet signed in.
+                if (auth.currentUser) {
+                    // Firebase user exists, proceed to name entry or main app
+                    await fetchUserProfile(auth.currentUser.uid); // This will then decide to show name modal or main app
+                } else {
+                    // This case should be rare if initializeFirebase succeeded, but as a fallback:
                     try {
-                        await auth.signInAnonymously();
+                        await auth.signInAnonymously(); // Ensure a Firebase user context for Firestore
+                        await fetchUserProfile(auth.currentUser.uid); // And then proceed
                         console.log("Forcing anonymous sign-in after custom login success.");
                     } catch (error) {
-                        console.error("Failed to force anonymous sign-in after custom login:", error);
-                        loginErrorMessage.textContent = "An internal error occurred. Please try again.";
+                        console.error("Failed to sign in anonymously after custom login:", error);
+                        loginErrorMessage.textContent = "An internal error occurred during setup. Please try again.";
                         loginErrorMessage.classList.remove('hidden');
+                        loginModal.classList.remove('hidden'); // Show login modal again if Firebase fails
                     }
                 }
+
             } else {
                 loginErrorMessage.textContent = "Invalid username or password.";
                 loginErrorMessage.classList.remove('hidden');
@@ -977,15 +975,14 @@
 
             if (allFamilyMembers.includes(enteredName)) {
                 if (userId === 'anonymous') {
-                    // This scenario shouldn't happen if Firebase auth is set up,
-                    // but as a safeguard, it means we don't have a proper user ID to link to.
-                    // Ideally, userId would always be set by onAuthStateChanged.
-                    nameErrorMessage.textContent = "User ID not established. Please try logging in again.";
+                     // This indicates an issue where Firebase user ID isn't available after custom login.
+                    nameErrorMessage.textContent = "Authentication issue. Please try logging in again.";
                     nameErrorMessage.classList.remove('hidden');
                     return;
                 }
                 await saveUserProfile(userId, enteredName);
                 nameModal.classList.add('hidden');
+                document.querySelector('main').classList.remove('hidden'); // Show the main app content
                 loadingSpinner.classList.remove('hidden'); 
                 fetchScheduleData(); // Now that name is set, fetch real app data
             } else {
