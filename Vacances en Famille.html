@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Holiday Task Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase CDN - using compat versions for global scope availability -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals (Slate, Zinc, Stone) with a Teal Accent -->
+    <!-- Application Structure Plan: A dashboard-style application with three main interactive components. 1) A timeline-style day selector at the top for primary navigation. 2) A central content area that dynamically displays the tasks for the selected day using a clean card layout. 3) A "View & Analyze" section with a dropdown to filter all tasks by person and a bar chart to visualize the overall task distribution. This structure was chosen to move from a static, hard-to-scan table to a focused, mobile-friendly, and personalized experience. It prioritizes the user's primary questions: "What's happening today?" and "What do I need to do?". The new editing feature is implemented via a modal that allows direct modification of assignments for a selected day, with the chart providing visual feedback on workload distribution. A "Help" modal is added to provide guidance on using the features and understanding task allocation. Firestore integration enables real-time collaborative editing and persistence of the schedule data. -->
+    <!-- Visualization & Content Choices: 
+        - Family Roster -> Goal: Inform -> Presentation: List with icons -> Interaction: N/A (serves as a legend) -> Justification: Clearly defines the participants. -> Library: HTML/Tailwind.
+        - Daily Schedule -> Goal: Organize/Inform -> Presentation: Dynamic Task Cards -> Interaction: Updates on day selection, now with an "Edit" button to open a modal for re-assignment -> Justification: More readable and responsive than a table, focuses user attention, and enables direct modification. -> Library: HTML/Tailwind/JS.
+        - Task Assignments per Person -> Goal: Organize/Personalize -> Presentation: Filterable List -> Interaction: Dropdown selection filters the displayed task list -> Justification: Provides a highly useful, personalized view of responsibilities. -> Library: HTML/JS.
+        - Overall Task Load -> Goal: Compare -> Presentation: Horizontal Bar Chart -> Interaction: Hover for details -> Justification: Provides a quick, visual confirmation of equitable task distribution among adults after any re-assignments. -> Library: Chart.js (Canvas).
+        - Help Menu -> Goal: Inform/Guide -> Presentation: Modal with structured text -> Interaction: Click to open/close -> Justification: Provides necessary explanations for app functionality and task logic. -> Library: HTML/Tailwind/JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .task-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .task-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .day-selector-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .day-selector-btn.active {
+            background-color: #0d9488; /* teal-600 */
+            color: white;
+            transform: scale(1.05);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px; 
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        ::-webkit-scrollbar {
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e2e8f0; /* slate-200 */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8; /* slate-400 */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; /* slate-500 */
+        }
+        /* Loading spinner styles */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #0d9488;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        <div id="user-id-display" class="absolute top-2 left-2 text-xs text-slate-500 bg-slate-100 p-1 rounded-md shadow-sm z-10">Loading User...</div>
+        <div class="relative flex flex-col items-center mb-8 md:mb-12">
+            <header class="text-center w-full">
+                <h1 id="app-title" class="text-4xl md:text-5xl font-bold text-slate-900">Family Holiday Planner</h1>
+                <p id="app-dates" class="mt-2 text-lg text-slate-600"></p>
+            </header>
+
+            <!-- New container for date pickers and controls -->
+            <div class="mt-6 flex flex-col md:flex-row md:justify-center md:items-end space-y-4 md:space-y-0 md:space-x-8 w-full max-w-3xl">
+                <!-- Start Date Picker -->
+                <div class="flex flex-col items-center">
+                    <label id="start-date-label" for="start-date-picker" class="text-sm font-semibold text-slate-700 mb-1">Start Date:</label>
+                    <input type="date" id="start-date-picker" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                </div>
+                <!-- End Date Picker -->
+                <div class="flex flex-col items-center">
+                    <label id="end-date-label" for="end-date-picker" class="text-sm font-semibold text-slate-700 mb-1">End Date:</label>
+                    <input type="date" id="end-date-picker" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                </div>
+                <!-- Help and Language Selector -->
+                <div class="flex justify-center items-end space-x-2 mt-4 md:mt-0">
+                    <button id="help-button" class="px-3 py-1 bg-slate-200 text-slate-700 rounded-full text-sm hover:bg-slate-300 transition">?</button>
+                    <div class="relative">
+                        <select id="language-selector" class="appearance-none bg-white border border-slate-300 text-slate-700 py-2 pl-3 pr-8 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm">
+                            <option value="en">🇺🇸 English</option>
+                            <option value="fr">🇫🇷 Français</option>
+                            <option value="es">🇪🇸 Español</option>
+                            <option value="nl">🇳🇱 Nederlands</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700">
+                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 6.757 7.586 5.343 9z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <main>
+            <div id="loading-spinner" class="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-40 hidden">
+                <div class="spinner"></div>
+                <p class="ml-4 text-slate-700">Loading data...</p>
+            </div>
+
+            <section class="mb-8">
+                <h2 id="select-day-title" class="text-2xl font-bold mb-4 text-slate-700 text-center">Select a Day</h2>
+                <div id="day-selector" class="flex items-center space-x-2 overflow-x-auto pb-4">
+                    </div>
+            </section>
+
+            <section id="daily-view" class="mb-12">
+                <h2 id="daily-view-title" class="text-3xl font-bold mb-6 text-center text-slate-800"></h2>
+                <div id="task-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    </div>
+                <div id="notes-container" class="mt-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-r-lg hidden">
+                    <p><strong class="font-bold"><span id="notes-for-day-text">Notes for the day</span>:</strong> <span id="daily-notes"></span></p>
+                </div>
+            </section>
+            
+            <section class="p-6 md:p-8 bg-white rounded-2xl shadow-lg">
+                 <h2 id="view-analyze-title" class="text-3xl font-bold mb-6 text-center text-slate-800">View & Analyze</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    
+                    <div id="personal-view">
+                        <h3 id="personal-tasks-title" class="text-xl font-bold mb-4 text-slate-700">See Your Personal Tasks</h3>
+                        <p id="select-person-desc" class="text-slate-600 mb-4">Select a family member to see all of their assigned tasks for the entire holiday.</p>
+                        <select id="person-filter" class="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                            <option value="all" id="show-all-option">Show All</option>
+                            </select>
+                        <div id="personal-task-list" class="mt-4 space-y-2 max-h-80 overflow-y-auto pr-2">
+                            </div>
+                    </div>
+
+                    <div id="analytics-view">
+                        <h3 id="adult-task-chart-title" class="text-xl font-bold mb-4 text-slate-700">Adult Task Distribution</h3>
+                        <p id="task-chart-desc" class="text-slate-600 mb-4">This chart shows the total number of tasks assigned to each adult to ensure a fair distribution of work.</p>
+                        <div class="chart-container">
+                            <canvas id="task-distribution-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg p-6 md:p-8 w-full max-w-2xl shadow-xl">
+            <h3 id="edit-modal-title" class="text-2xl font-bold mb-6 text-slate-800 text-center">Edit Tasks for <span id="modal-date-display"></span></h3>
+            <div id="edit-form-content" class="space-y-6">
+                </div>
+            <div class="mt-8 flex justify-end space-x-4">
+                <button id="cancel-edit-btn" class="px-6 py-2 bg-slate-200 text-slate-700 rounded-full font-semibold hover:bg-slate-300 transition">Cancel</button>
+                <button id="save-edit-btn" class="px-6 py-2 bg-teal-600 text-white rounded-full font-semibold hover:bg-teal-700 transition">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="help-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg p-6 md:p-8 w-full max-w-3xl shadow-xl overflow-y-auto max-h-[90vh]">
+            <h3 id="help-modal-title" class="text-2xl font-bold mb-6 text-slate-800 text-center">Help & Information</h3>
+            <div class="space-y-6 text-slate-700">
+                <div>
+                    <h4 id="help-edit-title" class="text-xl font-semibold mb-2 text-teal-700">How to Edit Tasks</h4>
+                    <p id="help-edit-desc-1" class="mb-2">To change who is assigned to a task on a specific day, first select the day from the timeline at the top of the page. Once the day's tasks are displayed, click the "<span class="font-bold">Edit</span>" button next to the day's title.</p>
+                    <p id="help-edit-desc-2" class="mb-2">A pop-up window will appear with dropdown menus for each task. Select the new family members for each role. Note that some dropdowns allow multiple selections (e.g., Cooking, Shopping), while others are single-selection (e.g., Adult Lead for Dressing/Cleaning, House Cleaning). The options available are filtered based on the rules of who can perform which task.</p>
+                    <p id="help-edit-desc-3" class="mb-2">After making your changes, click "<span class="font-bold">Save Changes</span>". The daily view and the "Adult Task Distribution" chart will automatically update to reflect your modifications. If you wish to discard changes, click "<span class="font-bold">Cancel</span>".</p>
+                </div>
+                <div>
+                    <h4 id="help-lang-title" class="text-xl font-semibold mb-2 text-teal-700">Language Selection</h4>
+                    <p id="help-lang-desc" class="mb-2">You can change the language of the application by using the dropdown menu located at the top right corner of the page. Select your preferred language (English, French, Spanish, or Dutch) and the entire interface, including task names and descriptions, will update instantly.</p>
+                </div>
+                <div>
+                    <h4 id="help-alloc-title" class="text-xl font-semibold mb-2 text-teal-700">Task Allocation & Fairness</h4>
+                    <p id="help-alloc-desc-1" class="mb-2">This planner aims to distribute holiday tasks fairly among all adult family members. The initial schedule has been designed to spread the workload as evenly as possible, taking into account specific individual capabilities and limitations.</p>
+                    <ul class="list-disc list-inside space-y-1 ml-4">
+                        <li id="alloc-rule-1"><span class="font-bold">Adults (ad)</span>: Miguel, Ankie, Juan, Marie, David, Mathilde, Eva can perform general tasks.</li>
+                        <li id="alloc-rule-2"><span class="font-bold">Children (ch)</span>: Noah, Emma, Mathias, Florent can assist with <span class="font-bold">Dressing the Table</span> and <span class="font-bold">Cleaning the Table</span> tasks, working under an assigned adult lead. They do not cook, shop, or do house cleaning.</li>
+                        <li id="alloc-rule-3"><span class="font-bold">Specific Restrictions</span>:
+                            <ul class="list-disc list-inside space-y-1 ml-6">
+                                <li id="alloc-rule-3a">No specific restrictions are currently enforced for task assignment in the editing mode, allowing manual selection of all adults for all tasks.</li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <p id="help-alloc-desc-2" class="mt-2">The "Adult Task Distribution" chart in the "View & Analyze" section provides a visual overview of the total tasks assigned to each adult. Use this chart, along with the personal task viewer, to gauge the fairness of the distribution and make adjustments via the edit feature if needed.</p>
+                </div>
+            </div>
+            <div class="mt-8 flex justify-end">
+                <button id="close-help-btn" class="px-6 py-2 bg-teal-600 text-white rounded-full font-semibold hover:bg-teal-700 transition">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CUSTOMIZABLE DATES ---
+        // Set your desired holiday start and end dates here.
+        // Use the format 'YYYY-MM-DD'.
+        // These will also be the default values for the date pickers.
+        let defaultStartDate = new Date('2025-08-05'); 
+        let defaultEndDate = new Date('2025-08-16'); 
+        // --------------------------
+
+        // This initial schedule data represents a 12-day cycle.
+        // It will be used as a template to generate schedules for custom date ranges.
+        // Firestore data will override this if available.
+        const defaultScheduleCycleTemplate = [
+            { day: 0, cooking: ["Ankie", "Marie"], dressing: { adult: "Juan", children: ["Noah"] }, cleaning: { adult: "Eva", children: ["Emma"] }, houseCleaning: "David", shopping: ["David", "Eva"], notes: "Arrival Day: Settle in, initial big grocery shop." },
+            { day: 1, cooking: ["Miguel", "Eva"], dressing: { adult: "Marie", children: ["Mathias"] }, cleaning: { adult: "Juan", children: ["Florent"] }, houseCleaning: "Ankie", shopping: [], notes: "" },
+            { day: 2, cooking: ["David", "Mathilde"], dressing: { adult: "Eva", children: ["Noah"] }, cleaning: { adult: "Ankie", children: ["Emma"] }, houseCleaning: "Marie", shopping: ["Miguel", "David"], notes: "" },
+            { day: 3, cooking: ["Juan", "Ankie"], dressing: { adult: "Miguel", children: ["Mathias"] }, cleaning: { adult: "Eva", children: ["Florent"] }, houseCleaning: "Miguel", shopping: [], notes: "" },
+            { day: 4, cooking: ["David", "Marie"], dressing: { adult: "Juan", children: ["Noah"] }, cleaning: { adult: "Mathilde", children: ["Emma"] }, houseCleaning: "Eva", shopping: ["Juan", "David"], notes: "" },
+            { day: 5, cooking: ["Ankie", "Eva"], dressing: { adult: "David", children: ["Mathias"] }, cleaning: { adult: "Marie", children: ["Florent"] }, houseCleaning: "Juan", shopping: [], notes: "" },
+            { day: 6, cooking: ["Miguel", "Mathilde"], dressing: { adult: "Miguel", children: ["Noah"] }, cleaning: { adult: "David", children: ["Emma"] }, houseCleaning: "Ankie", shopping: ["Miguel", "Juan"], notes: "" },
+            { day: 7, cooking: ["Juan", "Marie"], dressing: { adult: "Eva", children: ["Mathias"] }, cleaning: { adult: "Ankie", children: ["Florent"] }, houseCleaning: "David", shopping: [], notes: "" },
+            { day: 8, cooking: ["Miguel", "Mathilde"], dressing: { adult: "Marie", children: ["Noah"] }, cleaning: { adult: "Eva", children: ["Emma"] }, houseCleaning: "Miguel", shopping: ["Juan", "David"], notes: "" },
+            { day: 9, cooking: ["David", "Ankie"], dressing: { adult: "Juan", children: ["Mathias"] }, cleaning: { adult: "Miguel", children: ["Florent"] }, houseCleaning: "Eva", shopping: [], notes: "" },
+            { day: 10, cooking: ["Eva", "Marie"], dressing: { adult: "Ankie", children: ["Noah"] }, cleaning: { adult: "Juan", children: ["Emma"] }, houseCleaning: "David", shopping: ["Miguel", "David"], notes: "Last full day, consider a special dinner." },
+            { day: 11, cooking: ["All Adults"], dressing: { adult: "Juan", children: ["Mathias"] }, cleaning: { adult: "All", children: ["Florent"] }, houseCleaning: "All", shopping: [], notes: "Departure Day: Light breakfast, final house tidy-up before leaving." }
+        ];
+
+        let scheduleData = []; // This will hold the dynamically generated/fetched schedule
+
+        const family = {
+            adults: ["Miguel", "Ankie", "Juan", "Marie", "David", "Mathilde", "Eva"],
+            children: ["Noah", "Emma", "Mathias", "Florent"]
+        };
+
+        // Firebase related global variables from Canvas environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db;
+        let auth;
+        let userId = 'anonymous'; // Default until authenticated
+
+
+        const translations = {
+            en: {
+                title: "Family Holiday Planner",
+                dates: "August 5th - 16th, 2025", 
+                selectDay: "Select a Day",
+                notesForDay: "Notes for the day",
+                noOneAssigned: "No one assigned",
+                adultLeadChildHelpers: "Adult Lead + Child Helpers",
+                cooking: "Cooking",
+                dressingTable: "Dressing the Table",
+                cleaningTable: "Cleaning the Table",
+                houseCleaning: "House Cleaning",
+                shopping: "Shopping",
+                viewAnalyze: "View & Analyze",
+                seePersonalTasks: "See Your Personal Tasks",
+                selectPersonDescription: "Select a family member to see all of their assigned tasks for the entire holiday.",
+                showAll: "Show All",
+                noAssignedTasks: "has no assigned tasks.",
+                adultTaskDistribution: "Adult Task Distribution",
+                taskDistributionDescription: "This chart shows the total number of tasks assigned to each adult to ensure a fair distribution of work.",
+                totalTasksAssigned: "Total Tasks Assigned",
+                editButton: "Edit",
+                editTasksFor: "Edit Tasks for",
+                cancel: "Cancel",
+                saveChanges: "Save Changes",
+                helpButton: "Help",
+                helpModalTitle: "Help & Information",
+                helpEditTitle: "How to Edit Tasks",
+                helpEditDesc1: "To change who is assigned to a task on a specific day, first select the day from the timeline at the top of the page. Once the day's tasks are displayed, click the <span class=\"font-bold\">Edit</span> button next to the day's title.",
+                helpEditDesc2: "A pop-up window will appear with dropdown menus for each task. Select the new family members for each role. Note that some dropdowns allow multiple selections (e.g., Cooking, Shopping), while others are single-selection (e.g., Adult Lead for Dressing/Cleaning, House Cleaning). The options available are filtered based on the rules of who can perform which task.",
+                helpEditDesc3: "After making your changes, click <span class=\"font-bold\">Save Changes</span>. The daily view and the <span class=\"font-bold\">Adult Task Distribution</span> chart will automatically update to reflect your modifications. If you wish to discard changes, click <span class=\"font-bold\">Cancel</span>.",
+                helpLangTitle: "Language Selection",
+                helpLangDesc: "You can change the language of the application by using the dropdown menu located at the top right corner of the page. Select your preferred language (English, French, Spanish, or Dutch) and the entire interface, including task names and descriptions, will update instantly.",
+                helpAllocTitle: "Task Allocation & Fairness",
+                helpAllocDesc1: "This planner aims to distribute holiday tasks fairly among all adult family members. The initial schedule has been designed to spread the workload as evenly as possible, taking into account specific individual capabilities and limitations.",
+                allocRule1: "Adults (ad): Miguel, Ankie, Juan, Marie, David, Mathilde, Eva can perform general tasks.",
+                allocRule2: "Children (ch): Noah, Emma, Mathias, Florent can assist with <span class=\"font-bold\">Dressing the Table</span> and <span class=\"font-bold\">Cleaning the Table</span> tasks, working under an assigned adult lead. They do not cook, shop, or do house cleaning.",
+                allocRule3: "Specific Restrictions:",
+                allocRule3a: "No specific restrictions are currently enforced for task assignment in the editing mode, allowing manual selection of all adults for all tasks.", 
+                allocRule3b: "", 
+                helpAllocDesc2: "The <span class=\"font-bold\">Adult Task Distribution</span> chart in the \"View & Analyze\" section provides a visual overview of the total tasks assigned to each adult. Use this chart, along with the personal task viewer, to gauge the fairness of the distribution and make adjustments via the edit feature if needed.",
+                close: "Close",
+                days: {
+                    "Tuesday": "Tuesday",
+                    "Wednesday": "Wednesday",
+                    "Thursday": "Thursday",
+                    "Friday": "Friday",
+                    "Saturday": "Saturday",
+                    "Sunday": "Sunday",
+                    "Monday": "Monday"
+                },
+                cookingLead: "Cooking Lead",
+                cookingHelper: "Cooking Helper",
+                shoppingLead: "Shopping Lead",
+                shoppingHelper: "Shopping Helper",
+                dressingAdultLead: "Adult Lead",
+                dressingChildren: "Children Helpers",
+                cleaningAdultLead: "Adult Lead",
+                cleaningChildren: "Children Helpers",
+                startDateLabel: "Start Date:",
+                endDateLabel: "End Date:"
+            },
+            fr: {
+                title: "Planificateur de Vacances en Famille",
+                dates: "5 - 16 août 2025", 
+                selectDay: "Sélectionnez un Jour",
+                notesForDay: "Notes pour la journée",
+                noOneAssigned: "Personne assigné",
+                adultLeadChildHelpers: "Adulte Responsable + Enfants Aides",
+                cooking: "Cuisine",
+                dressingTable: "Dresser la Table",
+                cleaningTable: "Nettoyer la Table",
+                houseCleaning: "Nettoyage de la Maison",
+                shopping: "Courses",
+                viewAnalyze: "Voir & Analyser",
+                seePersonalTasks: "Voir Vos Tâches Personnelles",
+                selectPersonDescription: "Sélectionnez un membre de la famille pour voir toutes ses tâches assignées pour l'ensemble des vacances.",
+                showAll: "Afficher Tout",
+                noAssignedTasks: "n'a aucune tâche assignée.",
+                adultTaskDistribution: "Répartition des Tâches Adultes",
+                taskDistributionDescription: "Ce graphique montre le nombre total de tâches assignées à chaque adulte pour assurer une répartition équitable du travail.",
+                totalTasksAssigned: "Total des Tâches Assignées",
+                editButton: "Modifier",
+                editTasksFor: "Modifier les tâches pour",
+                cancel: "Annuler",
+                saveChanges: "Enregistrer les modifications",
+                helpButton: "Aide",
+                helpModalTitle: "Aide & Informations",
+                helpEditTitle: "Comment modifier les tâches",
+                helpEditDesc1: "Pour changer la personne affectée à une tâche un jour spécifique, sélectionnez d'abord le jour dans la chronologie en haut de la page. Une fois les tâches du jour affichées, cliquez sur le bouton <span class=\"font-bold\">Modifier</span> à côté du titre du jour.",
+                helpEditDesc2: "Une fenêtre contextuelle apparaîtra avec des menus déroulants pour chaque tâche. Sélectionnez les nouveaux membres de la famille pour chaque rôle. Notez que certains menus déroulants permettent plusieurs sélections (par exemple, Cuisine, Courses), tandis que d'autres sont à sélection unique (par exemple, Responsable Adulte pour Dressage/Nettoyage, Nettoyage de la Maison). Les options disponibles sont filtrées en fonction des règles d'attribution des tâches.",
+                helpEditDesc3: "Après avoir effectué vos modifications, cliquez sur <span class=\"font-bold\">Enregistrer les modifications</span>. La vue quotidienne et le graphique <span class=\"font-bold\">Répartition des Tâches Adultes</span> se mettront automatiquement à jour pour refléter vos modifications. Si vous souhaitez annuler les modifications, cliquez sur <span class=\"font-bold\">Annuler</span>.",
+                helpLangTitle: "Sélection de la Langue",
+                helpLangDesc: "Vous pouvez changer la langue de l'application en utilisant le menu déroulant situé en haut à droite de la page. Sélectionnez votre langue préférée (anglais, français, espagnol ou néerlandais) et toute l'interface, y compris les noms des tâches et les descriptions, se mettra à jour instantanément.",
+                helpAllocTitle: "Attribution des Tâches & Équité",
+                helpAllocDesc1: "Ce planificateur vise à répartir équitablement les tâches de vacances entre tous les membres adultes de la famille. Le calendrier initial a été conçu pour répartir la charge de travail le plus équitablement possible, en tenant compte des capacités et limitations individuelles spécifiques.",
+                allocRule1: "Adultes (ad) : Miguel, Ankie, Juan, Marie, David, Mathilde, Eva peuvent effectuer des tâches générales.",
+                allocRule2: "Enfants (ch) : Noah, Emma, Mathias, Florent peuvent aider aux tâches de <span class=\"font-bold\">Dresser la Table</span> et de <span class=\"font-bold\">Nettoyer la Table</span>, sous la direction d'un adulte assigné. Ils ne cuisinent pas, ne font pas les courses et ne nettoient pas la maison.",
+                allocRule3: "Restrictions Spécifiques :",
+                allocRule3a: "Aucune restriction spécifique n'est actuellement appliquée pour l'attribution des tâches en mode édition, permettant la sélection manuelle de tous les adultes pour toutes les tâches.", 
+                allocRule3b: "", 
+                helpAllocDesc2: "Le graphique <span class=\"font-bold\">Répartition des Tâches Adultes</span> dans la section \"Voir & Analyser\" fournit un aperçu visuel du total des tâches assignées à chaque adulte. Utilisez ce graphique, ainsi que le visualiseur de tâches personnelles, pour évaluer l'équité de la distribution et effectuer des ajustements via la fonction d'édition si nécessaire.",
+                close: "Fermer",
+                days: {
+                    "Tuesday": "Mardi",
+                    "Wednesday": "Mercredi",
+                    "Thursday": "Jeudi",
+                    "Friday": "Vendredi",
+                    "Saturday": "Samedi",
+                    "Sunday": "Dimanche",
+                    "Monday": "Lundi"
+                },
+                cookingLead: "Chef Cuisinier",
+                cookingHelper: "Aide Cuisinier",
+                shoppingLead: "Responsable Achats",
+                shoppingHelper: "Aide Achats",
+                dressingAdultLead: "Adulte Principal",
+                dressingChildren: "Enfants Aides",
+                cleaningAdultLead: "Adulte Principal",
+                cleaningChildren: "Enfants Aides",
+                startDateLabel: "Date de début :",
+                endDateLabel: "Date de fin :"
+            },
+            es: {
+                title: "Planificador de Vacaciones Familiares",
+                dates: "5 - 16 de agosto de 2025", 
+                selectDay: "Seleccionar un Día",
+                notesForDay: "Notas del día",
+                noOneAssigned: "Nadie asignado",
+                adultLeadChildHelpers: "Adulto Responsable + Niños Ayudantes",
+                cooking: "Cocina",
+                dressingTable: "Poner la Mesa",
+                cleaningTable: "Limpiar la Mesa",
+                houseCleaning: "Limpieza de la Casa",
+                shopping: "Compras",
+                viewAnalyze: "Ver y Analizar",
+                seePersonalTasks: "Ver Tus Tareas Personales",
+                selectPersonDescription: "Selecciona un miembro de la familia para ver todas sus tareas asignadas para todas las vacaciones.",
+                showAll: "Mostrar Todo",
+                noAssignedTasks: "no tiene tareas asignadas.",
+                adultTaskDistribution: "Distribución de Tareas Adultas",
+                taskDistributionDescription: "Este gráfico muestra el número total de tareas asignadas a cada adulto para asegurar una distribución justa del trabajo.",
+                totalTasksAssigned: "Total de Tareas Asignadas",
+                editButton: "Editar",
+                editTasksFor: "Editar tareas para",
+                cancel: "Cancelar",
+                saveChanges: "Guardar cambios",
+                helpButton: "Ayuda",
+                helpModalTitle: "Ayuda e Información",
+                helpEditTitle: "Cómo editar tareas",
+                helpEditDesc1: "Para cambiar quién está asignado a una tarea en un día específico, primero selecciona el día en la línea de tiempo en la parte superior de la página. Una vez que se muestren las tareas del día, haz clic en el botón <span class=\"font-bold\">Editar</span> junto al título del día.",
+                helpEditDesc2: "Aparecerá una ventana emergente con menús desplegables para cada tarea. Selecciona a los nuevos miembros de la familia para cada rol. Ten en cuenta que algunos menús desplegables permiten múltiples selecciones (por ejemplo, Cocina, Compras), mientras que otros son de selección única (por ejemplo, Líder Adulto para Poner/Limpiar la Mesa, Limpieza de la Casa). Las opciones disponibles se filtran según las reglas de quién puede realizar cada tarea.",
+                helpEditDesc3: "Después de realizar tus cambios, haz clic en <span class=\"font-bold\">Guardar cambios</span>. La vista diaria y el gráfico <span class=\"font-bold\">Distribución de Tareas de Adultos</span> se actualizarán automáticamente para reflejar tus modificaciones. Si deseas descartar los cambios, haz clic en <span class=\"font-bold\">Cancelar</span>.",
+                helpLangTitle: "Selección de Idioma",
+                helpLangDesc: "Puedes cambiar el idioma de la aplicación utilizando el menú desplegable ubicado en la esquina superior derecha de la página. Selecciona tu idioma preferido (inglés, francés, español u holandés) y toda la interfaz, incluyendo los nombres de las tareas y las descripciones, se actualizará instantáneamente.",
+                helpAllocTitle: "Asignación de Tareas y Equidad",
+                helpAllocDesc1: "Este planificador tiene como objetivo distribuir las tareas de vacaciones de manera justa entre todos los miembros adultos de la familia. El horario inicial ha sido diseñado para distribuir la carga de trabajo de la manera más equitativa posible, teniendo en cuenta las capacidades y limitaciones individuales específicas.",
+                allocRule1: "Adults (ad): Miguel, Ankie, Juan, Marie, David, Mathilde, Eva can perform general tasks.",
+                allocRule2: "Niños (ch): Noah, Emma, Mathias, Florent can assist with <span class=\"font-bold\">Poner la Mesa</span> y <span class=\"font-bold\">Limpiar la Mesa</span>, trabajando bajo la supervisión de un adulto asignado. No cocinan, no hacen compras ni limpian la casa.",
+                allocRule3: "Restricciones Específicas:",
+                allocRule3a: "Actualmente no se aplican restricciones específicas para la asignación de tareas en el modo de edición, lo que permite la selección manual de todos los adultos para todas las tareas.", 
+                allocRule3b: "", 
+                helpAllocDesc2: "El gráfico <span class=\"font-bold\">Distribución de Tareas de Adultos</span> en la sección \"Ver y Analizar\" proporciona una visión general visual del total de tareas asignadas a cada adulto. Utiliza este gráfico, junto con el visor de tareas personales, para evaluar la equidad de la distribución y realizar ajustes a través de la función de edición si es necesario.",
+                close: "Cerrar",
+                days: {
+                    "Tuesday": "Martes",
+                    "Wednesday": "Miércoles",
+                    "Thursday": "Miércoles",
+                    "Friday": "Viernes",
+                    "Saturday": "Sábado",
+                    "Sunday": "Domingo",
+                    "Monday": "Lunes"
+                },
+                cookingLead: "Cocinero Principal",
+                cookingHelper: "Ayudante de Cocina",
+                shoppingLead: "Responsable Compras",
+                shoppingHelper: "Ayudante Compras",
+                dressingAdultLead: "Adulto Principal",
+                dressingChildren: "Niños Ayudantes",
+                cleaningAdultLead: "Adulto Principal",
+                cleaningChildren: "Niños Ayudantes",
+                startDateLabel: "Fecha de inicio :",
+                endDateLabel: "Fecha de fin :"
+            },
+            nl: {
+                title: "Familie Vakantie Planner",
+                dates: "5 - 16 augustus 2025", 
+                selectDay: "Selecteer een Dag",
+                notesForDay: "Notities voor de dag",
+                noOneAssigned: "Niemand toegewezen",
+                adultLeadChildHelpers: "Volwassen Leider + Kinder helpers",
+                cooking: "Koken",
+                dressingTable: "Tafel Dekken",
+                cleaningTable: "Tafel Schoonmaken",
+                houseCleaning: "Huis Schoonmaken",
+                shopping: "Boodschappen",
+                viewAnalyze: "Bekijken & Analyseren",
+                seePersonalTasks: "Bekijk Je Persoonlijke Taken",
+                selectPersonDescription: "Selecteer een familielid om al hun toegewezen taken voor de hele vakantie te zien.",
+                showAll: "Toon Alles",
+                noAssignedTasks: "heeft geen taken toegewezen.",
+                adultTaskDistribution: "Taakverdeling Volwassenen",
+                taskDistributionDescription: "Deze grafiek toont het totale aantal taken dat aan elke volwassene is toegewezen om een eerlijke verdeling van het werk te garanderen.",
+                totalTasksAssigned: "Totaal Toegewezen Taken",
+                editButton: "Bewerken",
+                editTasksFor: "Taken bewerken voor",
+                cancel: "Annuleren",
+                saveChanges: "Wijzigingen opslaan",
+                helpButton: "Hulp",
+                helpModalTitle: "Hulp & Informatie",
+                helpEditTitle: "Hoe taken bewerken",
+                helpEditDesc1: "Om te wijzigen wie aan een taak is toegewezen op een specifieke dag, selecteert u eerst de dag in de tijdlijn bovenaan de pagina. Zodra de taken van de dag worden weergegeven, klikt u op de knop <span class=\"font-bold\">Bewerken</span> naast de titel van de dag.",
+                helpEditDesc2: "Er verschijnt een pop-upvenster met vervolgkeuzemenu's voor elke taak. Selecteer de nieuwe familieleden voor elke rol. Merk op dat sommige vervolgkeuzemenu's meerdere selecties toestaan (bijv. Koken, Boodschappen), terwijl andere enkelvoudige selectie zijn (bijv. Volwassen Leider voor Dekken/Schoonmaken, Huis Schoonmaken). De beschikbare opties worden gefilterd op basis van de regels wie welke taak mag uitvoeren.",
+                helpEditDesc3: "Nadat u uw wijzigingen hebt aangebracht, klikt u op <span class=\"font-bold\">Wijzigingen opslaan</span>. De dagelijkse weergave en de grafiek <span class=\"font-bold\">Taakverdeling Volwassenen</span> worden automatisch bijgewerkt om uw wijzigingen weer te geven. Als u de wijzigingen wilt annuleren, klikt u op <span class=\"font-bold\">Annuleren</span>.",
+                helpLangTitle: "Taalselectie",
+                helpLangDesc: "U kunt de taal van de applicatie wijzigen met behulp van het vervolgkeuzemenu in de rechterbovenhoek van de pagina. Selecteer uw voorkeurstaal (Engels, Frans, Spaans of Nederlands) en de hele interface, inclusief taaknamen en beschrijvingen, wordt direct bijgewerkt.",
+                helpAllocTitle: "Taaktoewijzing & Eerlijkheid",
+                helpAllocDesc1: "Deze planner heeft tot doel vakantietaken eerlijk te verdelen over alle volwassen familieleden. Het initiële schema is ontworpen om de werkdruk zo gelijkmatig mogelijk te verdelen, rekening houdend met specifieke individuele capaciteiten en beperkingen.",
+                allocRule1: "Volwassenen (ad): Miguel, Ankie, Juan, Marie, David, Mathilde, Eva kunnen algemene taken uitvoeren.",
+                allocRule2: "Kinderen (ch): Noah, Emma, Mathias, Florent kunnen helpen met het <span class=\"font-bold\">Tafel Dekken</span> en het <span class=\"font-bold\">Tafel Schoonmaken</span>, onder leiding van een toegewezen volwassene. Ze koken niet, doen geen boodschappen en maken het huis niet schoon.",
+                allocRule3: "Specifieke Beperkingen:",
+                allocRule3a: "Geen specifieke beperkingen worden momenteel afgedwongen voor taaktoewijzing in de bewerkingsmodus, waardoor handmatige selectie van alle volwassenen voor alle taken mogelijk is.", 
+                allocRule3b: "", 
+                helpAllocDesc2: "De grafiek <span=\"font-bold\">Taakverdeling Volwassenen</span> in de sectie \"Bekijken & Analyseren\" geeft een visueel overzicht van het totale aantal taken dat aan elke volwassene is toegewezen. Gebruik deze grafiek, samen met de persoonlijke takenviewer, om de eerlijkheid van de verdeling te beoordelen en indien nodig aanpassingen te doen via de bewerkingsfunctie.",
+                close: "Sluiten",
+                days: {
+                    "Tuesday": "Dinsdag",
+                    "Wednesday": "Woensdag",
+                    "Thursday": "Donderdag",
+                    "Friday": "Vrijdag",
+                    "Saturday": "Zaterdag",
+                    "Sunday": "Zondag",
+                    "Monday": "Maandag"
+                },
+                cookingLead: "Kook Leider",
+                cookingHelper: "Kook Helper",
+                shoppingLead: "Boodschappen Leider",
+                shoppingHelper: "Boodschappen Helper",
+                dressingAdultLead: "Volwassen Leider",
+                dressingChildren: "Kinder Helpers",
+                cleaningAdultLead: "Volwassen Leider",
+                cleaningChildren: "Kinder Helpers",
+                startDateLabel: "Startdatum :",
+                endDateLabel: "Einddatum :"
+            }
+        };
+
+        const personFilter = document.getElementById('person-filter');
+        const daySelector = document.getElementById('day-selector');
+        const languageSelector = document.getElementById('language-selector');
+        const editModal = document.getElementById('edit-modal');
+        const modalDateDisplay = document.getElementById('modal-date-display');
+        const editFormContent = document.getElementById('edit-form-content');
+        const saveEditBtn = document.getElementById('save-edit-btn');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        const helpButton = document.getElementById('help-button');
+        const helpModal = document.getElementById('help-modal');
+        const closeHelpBtn = document.getElementById('close-help-btn');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const userIdDisplay = document.getElementById('user-id-display');
+        const appDatesElement = document.getElementById('app-dates');
+        const startDatePicker = document.getElementById('start-date-picker');
+        const endDatePicker = document.getElementById('end-date-picker');
+        const startDateLabel = document.getElementById('start-date-label');
+        const endDateLabel = document.getElementById('end-date-label');
+
+
+        let taskDistributionChart = null;
+        let currentLanguage = 'en'; // Default language
+        let currentDayIndex = 0; // To track the currently displayed day
+
+        // Function to generate the schedule dynamically based on dates
+        function generateScheduleData(start, end, templateCycle) {
+            const days = [];
+            let currentDate = new Date(start);
+            let cycleIndex = 0; // To loop through the templateCycle array
+
+            while (currentDate <= end) {
+                const dateOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+                const dayOfWeekOptions = { weekday: 'long' };
+
+                const formattedDate = currentDate.toLocaleDateString('en-US', dateOptions).replace(',', '');
+                const dayOfWeek = currentDate.toLocaleDateString('en-US', dayOfWeekOptions);
+
+                const templateDay = templateCycle[cycleIndex % templateCycle.length]; // Get the template day from the cycle
+
+                // Create a deep copy of the template day's relevant properties
+                const dayEntry = {
+                    date: formattedDate,
+                    day: dayOfWeek, // Use the actual day of week, not the template's 'day' index
+                    cooking: JSON.parse(JSON.stringify(templateDay.cooking)),
+                    dressing: JSON.parse(JSON.stringify(templateDay.dressing)),
+                    cleaning: JSON.parse(JSON.stringify(templateDay.cleaning)),
+                    houseCleaning: JSON.parse(JSON.stringify(templateDay.houseCleaning)),
+                    shopping: JSON.parse(JSON.stringify(templateDay.shopping)),
+                    notes: templateDay.notes ? JSON.parse(JSON.stringify(templateDay.notes)) : ""
+                };
+                
+                days.push(dayEntry);
+                currentDate.setDate(currentDate.getDate() + 1);
+                cycleIndex++;
+            }
+            return days;
+        }
+
+        // Firebase Init & Data Fetch
+        async function initializeFirebase() {
+            loadingSpinner.classList.remove('hidden');
+            if (firebaseConfig) {
+                const app = firebase.initializeApp(firebaseConfig);
+                db = app.firestore(); 
+                auth = app.auth();    
+
+                try {
+                    if (initialAuthToken) {
+                        await auth.signInWithCustomToken(initialAuthToken);
+                    } else {
+                        await auth.signInAnonymously();
+                    }
+                    userId = auth.currentUser?.uid || crypto.randomUUID();
+                    console.log("Firebase initialized and authenticated. User ID:", userId);
+                    userIdDisplay.textContent = `User ID: ${userId}`;
+                    fetchScheduleData(); // Start fetching data after auth
+                } catch (error) {
+                    console.error("Firebase authentication failed:", error);
+                    userIdDisplay.textContent = `User ID: Anonymous (Error)`;
+                    loadingSpinner.classList.add('hidden');
+                    fetchScheduleDataFallback(); // Fallback if auth fails
+                }
+            } else {
+                console.warn("Firebase config not found. Running in local data mode.");
+                userIdDisplay.textContent = `User ID: Anonymous (Local)`;
+                loadingSpinner.classList.add('hidden');
+                fetchScheduleDataFallback();
+            }
+        }
+
+        // Firestore path
+        const getScheduleDocRef = () => {
+            if (!db) {
+                console.error("Firestore DB not initialized.");
+                return null;
+            }
+            const scheduleId = 'main_holiday_schedule_v2'; // A fixed ID for the single collaborative document (changed for new format)
+            return db.collection(`artifacts/${appId}/public/data/holiday_schedules`).doc(scheduleId);
+        };
+
+        // Fetch data with real-time listener
+        function fetchScheduleData() {
+            const docRef = getScheduleDocRef();
+            if (!docRef) {
+                loadingSpinner.classList.add('hidden');
+                return;
+            }
+
+            docRef.onSnapshot((docSnap) => {
+                loadingSpinner.classList.add('hidden');
+                let fetchedStartDate = defaultStartDate;
+                let fetchedEndDate = defaultEndDate;
+
+                if (docSnap.exists) { 
+                    const data = docSnap.data();
+                    if (data.schedule && data.schedule.length > 0 && data.startDate && data.endDate) {
+                        scheduleData.splice(0, scheduleData.length); // Clear existing
+                        scheduleData.push(...data.schedule); // Add new data
+                        fetchedStartDate = new Date(data.startDate);
+                        fetchedEndDate = new Date(data.endDate);
+                        console.log("Schedule data updated from Firestore.");
+                    } else {
+                        console.log("Firestore data is in old format or empty, re-initializing with new structure and default data.");
+                        scheduleData = generateScheduleData(defaultStartDate, defaultEndDate, defaultScheduleCycleTemplate);
+                        saveScheduleData(scheduleData, defaultStartDate, defaultEndDate); // Save the newly generated default schedule
+                    }
+                } else {
+                    console.log("No schedule data in Firestore, initializing default based on dates.");
+                    scheduleData = generateScheduleData(defaultStartDate, defaultEndDate, defaultScheduleCycleTemplate);
+                    saveScheduleData(scheduleData, defaultStartDate, defaultEndDate); // Save initial data if not present
+                }
+                
+                // Set picker values and refresh UI based on fetched/default dates
+                startDatePicker.value = fetchedStartDate.toISOString().split('T')[0];
+                endDatePicker.value = fetchedEndDate.toISOString().split('T')[0];
+                refreshUI();
+
+            }, (error) => {
+                console.error("Error fetching Firestore schedule:", error);
+                loadingSpinner.classList.add('hidden');
+                fetchScheduleDataFallback();
+            });
+        }
+
+        // Fallback for when Firestore is not available or fails
+        function fetchScheduleDataFallback() {
+            console.warn("Using local default schedule data based on dates.");
+            scheduleData = generateScheduleData(defaultStartDate, defaultEndDate, defaultScheduleCycleTemplate); // Generate schedule for fallback
+            
+            startDatePicker.value = defaultStartDate.toISOString().split('T')[0];
+            endDatePicker.value = defaultEndDate.toISOString().split('T')[0];
+
+            refreshUI(); // Use the generated scheduleData
+        }
+
+        // Save data to Firestore - now includes start and end dates
+        async function saveScheduleData(data, currentStart, currentEnd) {
+            const docRef = getScheduleDocRef();
+            if (!docRef) {
+                console.error("Cannot save: Firestore DB not initialized.");
+                return;
+            }
+
+            try {
+                await docRef.set({ 
+                    schedule: data,
+                    startDate: currentStart.toISOString().split('T')[0], // Store as YYYY-MM-DD string
+                    endDate: currentEnd.toISOString().split('T')[0]      // Store as YYYY-MM-DD string
+                });
+                console.log("Schedule data saved to Firestore.");
+            } catch (error) {
+                console.error("Error saving schedule data to Firestore:", error);
+                // Inform user about save failure
+            }
+        }
+
+        // Function to refresh all UI components after data change
+        function refreshUI() {
+            updateAppDatesDisplay(); // Update dates display first
+
+            // Ensure scheduleData has content before proceeding with display-related functions
+            if (scheduleData.length === 0) {
+                document.getElementById('task-grid').innerHTML = '<p class="text-center text-slate-500">No schedule data available for these dates.</p>';
+                document.getElementById('personal-task-list').innerHTML = '<p class="text-slate-500 text-center">No tasks to display.</p>';
+                const dailyViewTitleElement = document.getElementById('daily-view-title');
+                if (dailyViewTitleElement) {
+                    dailyViewTitleElement.innerHTML = getTranslation('selectDay'); // Clear daily view title
+                }
+                daySelector.innerHTML = ''; // Clear day selector buttons
+                if (taskDistributionChart) {
+                    taskDistributionChart.destroy(); // Destroy existing chart if no data
+                    taskDistributionChart = null; // Reset chart instance
+                }
+                return; // Exit if no data
+            }
+
+            // Ensure currentDayIndex is within bounds after potential scheduleData changes
+            if (currentDayIndex >= scheduleData.length) {
+                currentDayIndex = 0; // Reset to first day if out of bounds
+            }
+
+            populateDaySelector();
+            populatePersonFilter(); 
+            displayDay(currentDayIndex); 
+            displayPersonalTasks(personFilter.value); 
+            createTaskDistributionChart(); 
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize date pickers with default dates
+            startDatePicker.value = defaultStartDate.toISOString().split('T')[0];
+            endDatePicker.value = defaultEndDate.toISOString().split('T')[0];
+
+            // Add event listeners for date changes
+            startDatePicker.addEventListener('change', handleDateChange);
+            endDatePicker.addEventListener('change', handleDateChange);
+
+            await initializeFirebase(); // Initialize Firebase first and fetch data
+            updateLanguage(currentLanguage); // Then update language and render UI based on fetched data
+            
+            personFilter.addEventListener('change', (e) => {
+                displayPersonalTasks(e.target.value);
+            });
+
+            languageSelector.addEventListener('change', (e) => {
+                updateLanguage(e.target.value);
+            });
+
+            saveEditBtn.addEventListener('click', saveEditChanges);
+            cancelEditBtn.addEventListener('click', cancelEditChanges);
+
+            helpButton.addEventListener('click', () => helpModal.classList.remove('hidden'));
+            closeHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
+        });
+
+        // Handle date picker changes
+        function handleDateChange() {
+            const newStartDate = new Date(startDatePicker.value);
+            const newEndDate = new Date(endDatePicker.value);
+
+            // Basic validation: ensure end date is not before start date
+            if (newStartDate > newEndDate) {
+                alert("End date cannot be before start date. Please adjust your selection.");
+                endDatePicker.value = startDatePicker.value; // Reset end date to start date
+                return;
+            }
+
+            // Update default global dates
+            defaultStartDate = newStartDate;
+            defaultEndDate = newEndDate;
+
+            // Generate new schedule based on selected dates and save to Firestore
+            scheduleData = generateScheduleData(defaultStartDate, defaultEndDate, defaultScheduleCycleTemplate);
+            saveScheduleData(scheduleData, defaultStartDate, defaultEndDate);
+            // UI refresh will be handled by onSnapshot listener after save
+        }
+
+
+        function getTranslation(key) {
+            const value = translations[currentLanguage][key];
+            if (value === undefined) {
+                // Fallback to English if translation is missing for the current language
+                return translations['en'][key] || key;
+            }
+            return value;
+        }
+
+        function updateAppDatesDisplay() {
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            const formattedStartDate = defaultStartDate.toLocaleDateString(currentLanguage, options);
+            const formattedEndDate = defaultEndDate.toLocaleDateString(currentLanguage, options);
+            appDatesElement.textContent = `${formattedStartDate} - ${formattedEndDate}`;
+
+            // Also update labels for date pickers
+            startDateLabel.textContent = getTranslation('startDateLabel');
+            endDateLabel.textContent = getTranslation('endDateLabel');
+        }
+
+        function updateLanguage(lang) {
+            currentLanguage = lang;
+            document.documentElement.lang = lang; 
+            
+            // All UI refresh is handled by refreshUI, which is called after setting the language
+            refreshUI(); 
+        }
+
+        function populateDaySelector() {
+            daySelector.innerHTML = ''; 
+            scheduleData.forEach((day, index) => {
+                const button = document.createElement('button');
+                button.className = 'day-selector-btn flex-shrink-0 text-sm md:text-base font-semibold py-2 px-4 rounded-full bg-white shadow-sm hover:bg-teal-500 hover:text-white';
+                const dateParts = day.date.split(' '); // e.g., ["Aug", "05,", "2025"]
+                const dayOfMonth = dateParts[1].replace(',', ''); // "05"
+                const dayName = getTranslation('days')[day.day] || day.day; 
+                button.innerHTML = `<span class="font-normal text-xs">${dayName}</span> ${dayOfMonth}`;
+                button.onclick = () => displayDay(index);
+                daySelector.appendChild(button);
+            });
+        }
+
+        function populatePersonFilter() {
+            personFilter.innerHTML = `<option value="all">${getTranslation('showAll')}</option>`; 
+            const allMembers = [...family.adults, ...family.children].sort();
+            allMembers.forEach(person => {
+                const option = document.createElement('option');
+                option.value = person;
+                option.textContent = person;
+                personFilter.appendChild(option);
+            });
+        }
+
+        function displayDay(index) {
+            // Check if scheduleData exists and the index is valid
+            if (!scheduleData || scheduleData.length === 0 || index < 0 || index >= scheduleData.length) {
+                console.warn(`Attempted to display day with invalid index ${index} or empty scheduleData.`);
+                document.getElementById('daily-view-title').innerHTML = `${getTranslation('selectDay')}`;
+                document.getElementById('task-grid').innerHTML = '<p class="text-center text-slate-500">No schedule details available for this day.</p>';
+                document.getElementById('notes-container').classList.add('hidden');
+                return;
+            }
+
+            currentDayIndex = index; 
+            const dayData = scheduleData[index];
+            const taskGrid = document.getElementById('task-grid');
+            
+            const dailyViewTitleElement = document.getElementById('daily-view-title');
+            if (dailyViewTitleElement) { 
+                dailyViewTitleElement.innerHTML = `${getTranslation('days')[dayData.day] || dayData.day}, ${dayData.date} 
+                    <button id="edit-day-btn" class="ml-4 px-3 py-1 bg-teal-500 text-white text-sm rounded-full hover:bg-teal-600 transition">
+                        ${getTranslation('editButton')}
+                    </button>`;
+                document.getElementById('edit-day-btn').onclick = () => openEditModal(index);
+            }
+
+            Array.from(daySelector.children).forEach((btn, i) => {
+                btn.classList.toggle('active', i === index);
+            });
+
+            taskGrid.innerHTML = ''; 
+
+            const createTaskCard = (titleKey, people, icon) => { 
+                const card = document.createElement('div');
+                card.className = 'task-card p-6 flex flex-col items-center text-center';
+                let peopleHTML = '';
+                if (Array.isArray(people) && people.length > 0) {
+                    peopleHTML = people.map(p => `<span class="inline-block bg-slate-200 text-slate-700 text-sm font-medium mr-2 mb-2 px-3 py-1 rounded-full">${p}</span>`).join('');
+                } else if (typeof people === 'string' && people !== '') { // Ensure not empty string
+                    peopleHTML = `<span class="inline-block bg-slate-200 text-slate-700 text-sm font-medium mr-2 mb-2 px-3 py-1 rounded-full">${people}</span>`;
+                }
+
+                card.innerHTML = `
+                    <div class="text-4xl mb-3 text-teal-600">${icon}</div>
+                    <h3 class="text-xl font-bold mb-3 text-slate-800">${getTranslation(titleKey)}</h3>
+                    <div class="flex flex-wrap justify-center">${peopleHTML || `<span class="text-slate-500">${getTranslation('noOneAssigned')}</span>`}</div>
+                `;
+                return card;
+            };
+
+            const createTeamTaskCard = (titleKey, team, icon) => { 
+                 const card = document.createElement('div');
+                card.className = 'task-card p-6 flex flex-col items-center text-center';
+                const adultHTML = team.adult && team.adult !== '' ? `<span class="inline-block bg-teal-200 text-teal-800 text-sm font-bold mr-2 mb-2 px-3 py-1 rounded-full">${team.adult}</span>` : '';
+                const childrenHTML = (team.children && team.children.length > 0) ? team.children.map(c => `<span class="inline-block bg-amber-200 text-amber-800 text-sm font-medium mr-2 mb-2 px-3 py-1 rounded-full">${c}</span>`).join('') : '';
+                 card.innerHTML = `
+                    <div class="text-4xl mb-3 text-teal-600">${icon}</div>
+                    <h3 class="text-xl font-bold mb-3 text-slate-800">${getTranslation(titleKey)}</h3>
+                    <p class="text-xs text-slate-500 mb-2">${getTranslation('adultLeadChildHelpers')}</p>
+                    <div class="flex flex-wrap justify-center items-center">
+                        ${adultHTML}
+                        ${childrenHTML || (adultHTML ? '' : `<span class="text-slate-500">${getTranslation('noOneAssigned')}</span>`)}
+                    </div>
+                `;
+                return card;
+            };
+
+            taskGrid.appendChild(createTaskCard('cooking', dayData.cooking, '🍳'));
+            taskGrid.appendChild(createTeamTaskCard('dressingTable', dayData.dressing, '🍽️'));
+            taskGrid.appendChild(createTeamTaskCard('cleaningTable', dayData.cleaning, '🧽'));
+            taskGrid.appendChild(createTaskCard('houseCleaning', dayData.houseCleaning, '🧹'));
+            
+            // Only add shopping if it has assignments or is explicitly defined
+            if (dayData.shopping !== undefined) {
+                taskGrid.appendChild(createTaskCard('shopping', dayData.shopping, '🛒'));
+            }
+
+            const notesContainer = document.getElementById('notes-container');
+            const dailyNotes = document.getElementById('daily-notes');
+            if (notesContainer && dailyNotes) {
+                if (dayData.notes) {
+                    dailyNotes.textContent = dayData.notes; 
+                    notesContainer.classList.remove('hidden');
+                } else {
+                    notesContainer.classList.add('hidden');
+                }
+            }
+        }
+        
+        function displayPersonalTasks(person) {
+            const taskList = document.getElementById('personal-task-list');
+            taskList.innerHTML = '';
+
+            if (person === 'all') {
+                taskList.innerHTML = `<p class="text-slate-500 text-center">${getTranslation('selectPersonDescription')}</p>`;
+                return;
+            }
+
+            const assignedTasks = [];
+            scheduleData.forEach(day => {
+                const checkTask = (taskNameKey, assigned) => { 
+                    if (Array.isArray(assigned) && assigned.includes(person)) {
+                        assignedTasks.push({date: day.date, task: getTranslation(taskNameKey)});
+                    } else if (typeof assigned === 'string' && assigned === person) {
+                        assignedTasks.push({date: day.date, task: getTranslation(taskNameKey)});
+                    } else if (typeof assigned === 'object' && assigned !== null && (assigned.adult === person || (assigned.children && assigned.children.includes(person)))) {
+                        assignedTasks.push({date: day.date, task: getTranslation(taskNameKey)});
+                    }
+                };
+
+                checkTask('cooking', day.cooking);
+                checkTask('dressingTable', day.dressing);
+                checkTask('cleaningTable', day.cleaning);
+                checkTask('houseCleaning', day.houseCleaning);
+                checkTask('shopping', day.shopping);
+            });
+
+            if (assignedTasks.length === 0) {
+                taskList.innerHTML = `<p class="text-slate-500 text-center">${person} ${getTranslation('noAssignedTasks')}</p>`;
+            } else {
+                assignedTasks.forEach(task => {
+                    const div = document.createElement('div');
+                    div.className = 'p-3 bg-slate-100 rounded-lg flex justify-between items-center';
+                    div.innerHTML = `
+                        <span class="font-semibold text-slate-700">${task.task}</span>
+                        <span class="text-sm text-slate-500">${task.date}</span>
+                    `;
+                    taskList.appendChild(div);
+                });
+            }
+        }
+
+        function createTaskDistributionChart() {
+            const taskCounts = {};
+            family.adults.forEach(adult => taskCounts[adult] = 0);
+
+            // Ensure scheduleData is not empty before processing
+            if (scheduleData.length === 0) {
+                const ctx = document.getElementById('task-distribution-chart').getContext('2d');
+                if (taskDistributionChart) {
+                    taskDistributionChart.destroy();
+                }
+                taskDistributionChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [], // Empty labels
+                        datasets: [] // Empty datasets
+                    },
+                    options: {} // Empty options or default minimal
+                });
+                return; 
+            }
+
+
+            scheduleData.forEach(day => {
+                const countTask = (assigned) => {
+                    if (Array.isArray(assigned)) {
+                        assigned.forEach(p => { if (family.adults.includes(p) && taskCounts[p] !== undefined) taskCounts[p]++; });
+                    } else if (typeof assigned === 'string' && family.adults.includes(assigned) && taskCounts[assigned] !== undefined) {
+                        taskCounts[assigned]++;
+                    } else if (typeof assigned === 'object' && assigned !== null && family.adults.includes(assigned.adult) && taskCounts[assigned.adult] !== undefined) {
+                        taskCounts[assigned.adult]++;
+                    }
+                };
+                countTask(day.cooking);
+                countTask(day.dressing);
+                countTask(day.cleaning);
+                countTask(day.houseCleaning);
+                countTask(day.shopping);
+            });
+
+            const ctx = document.getElementById('task-distribution-chart').getContext('2d');
+            if (taskDistributionChart) {
+                taskDistributionChart.destroy();
+            }
+            taskDistributionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(taskCounts),
+                    datasets: [{
+                        label: getTranslation('totalTasksAssigned'), 
+                        data: Object.values(taskCounts),
+                        backgroundColor: '#14b8a6', 
+                        borderColor: '#0d9488', 
+                        borderWidth: 1,
+                        borderRadius: 5,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#0f172a', 
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            padding: 10,
+                            cornerRadius: 6,
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                             grid: {
+                                color: '#e2e8f0' 
+                            },
+                             ticks: {
+                                color: '#475569' 
+                            }
+                        },
+                        y: {
+                             grid: {
+                                display: false
+                            },
+                             ticks: {
+                                color: '#475569' 
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Updated function: All adults are now eligible for all adult tasks in edit mode
+        function getEligiblePeople(taskType) {
+            switch (taskType) {
+                case 'cooking':
+                case 'houseCleaning':
+                case 'shopping':
+                    return family.adults; // All adults now eligible
+                case 'dressing': // adult lead
+                case 'cleaning': // adult lead
+                    return family.adults;
+                case 'children-dressing-cleaning': // child helpers
+                    return family.children;
+                default:
+                    return [];
+            }
+        }
+
+        function createSelectElement(id, options, selectedValues, isMultiple = false, includeNoneOption = false, labelText = '') {
+            const container = document.createElement('div');
+            container.className = 'mb-4';
+
+            const label = document.createElement('label');
+            label.htmlFor = id;
+            label.className = 'block text-sm font-medium text-slate-700 mb-1';
+            label.textContent = labelText;
+            container.appendChild(label);
+
+            const select = document.createElement('select');
+            select.id = id;
+            select.className = 'w-full p-2 border border-slate-300 rounded-md focus:ring-1 focus:ring-teal-500 focus:border-teal-500 bg-white text-slate-700';
+            if (isMultiple) {
+                select.multiple = true;
+                select.size = Math.min(options.length + (includeNoneOption ? 1 : 0), 5); 
+            }
+
+            if (includeNoneOption && !isMultiple) { 
+                const noneOption = document.createElement('option');
+                noneOption.value = '';
+                noneOption.textContent = getTranslation('noOneAssigned');
+                select.appendChild(noneOption);
+            } else if (includeNoneOption && isMultiple) { // For multiple select, 'None' means empty selection
+                 const noneOption = document.createElement('option');
+                noneOption.value = '';
+                noneOption.textContent = '-- Select none --'; // Can be translated if needed
+                // Don't pre-select if it's a multiple select with 'none'
+                select.appendChild(noneOption); // Append for multiple select if needed
+            }
+
+
+            options.forEach(optionValue => {
+                const option = document.createElement('option');
+                option.value = optionValue;
+                option.textContent = optionValue;
+                if (isMultiple) {
+                    if (selectedValues && selectedValues.includes(optionValue)) {
+                        option.selected = true;
+                    }
+                } else {
+                    if (selectedValues === optionValue) {
+                        option.selected = true;
+                    }
+                }
+                select.appendChild(option);
+            });
+            
+            container.appendChild(select);
+            return container;
+        }
+
+        function openEditModal(dayIndex) {
+            currentDayIndex = dayIndex;
+            const dayData = scheduleData[dayIndex];
+            modalDateDisplay.textContent = `${getTranslation('days')[dayData.day] || dayData.day}, ${dayData.date}`;
+            editFormContent.innerHTML = '';
+
+            // Cooking Task - All adults eligible, multiple select
+            const cookingPeople = Array.isArray(dayData.cooking) ? dayData.cooking : (typeof dayData.cooking === 'string' ? [dayData.cooking] : []);
+            editFormContent.appendChild(createSelectElement(`edit-cooking`, getEligiblePeople('cooking'), cookingPeople, true, true, getTranslation('cooking')));
+
+            // Dressing the Table Task - Adult lead (single select) + Children (multiple select)
+            editFormContent.appendChild(createSelectElement(`edit-dressing-adult`, getEligiblePeople('dressing'), dayData.dressing.adult, false, false, getTranslation('dressingAdultLead')));
+            editFormContent.appendChild(createSelectElement(`edit-dressing-children`, getEligiblePeople('children-dressing-cleaning'), dayData.dressing.children, true, true, getTranslation('dressingChildren')));
+
+            // Cleaning the Table Task - Adult lead (single select) + Children (multiple select)
+            editFormContent.appendChild(createSelectElement(`edit-cleaning-adult`, getEligiblePeople('cleaning'), dayData.cleaning.adult, false, false, getTranslation('cleaningAdultLead')));
+            editFormContent.appendChild(createSelectElement(`edit-cleaning-children`, getEligiblePeople('children-dressing-cleaning'), dayData.cleaning.children, true, true, getTranslation('cleaningChildren')));
+
+            // House Cleaning Task - Single adult select
+            editFormContent.appendChild(createSelectElement(`edit-houseCleaning`, getEligiblePeople('houseCleaning'), dayData.houseCleaning, false, false, getTranslation('houseCleaning')));
+
+            // Shopping Task - All adults eligible, multiple select
+            const shoppingPeople = Array.isArray(dayData.shopping) ? dayData.shopping : (typeof dayData.shopping === 'string' ? [dayData.shopping] : []);
+            editFormContent.appendChild(createSelectElement(`edit-shopping`, getEligiblePeople('shopping'), shoppingPeople, true, true, getTranslation('shopping')));
+
+            editModal.classList.remove('hidden');
+        }
+
+        function saveEditChanges() {
+            const dayData = scheduleData[currentDayIndex];
+
+            const getSelectedValues = (id, isMultiple) => {
+                const selectElement = document.getElementById(id);
+                if (isMultiple) {
+                    return Array.from(selectElement.selectedOptions).map(option => option.value).filter(val => val !== ''); 
+                }
+                return selectElement.value === '' ? '' : selectElement.value; // Handle empty string for single select "None"
+            };
+
+            // Update Cooking
+            dayData.cooking = getSelectedValues('edit-cooking', true);
+
+            // Update Dressing the Table
+            dayData.dressing.adult = getSelectedValues('edit-dressing-adult', false);
+            dayData.dressing.children = getSelectedValues('edit-dressing-children', true);
+
+            // Update Cleaning the Table
+            dayData.cleaning.adult = getSelectedValues('edit-cleaning-adult', false);
+            dayData.cleaning.children = getSelectedValues('edit-cleaning-children', true);
+
+            // Update House Cleaning
+            dayData.houseCleaning = getSelectedValues('edit-houseCleaning', false);
+
+            // Update Shopping
+            dayData.shopping = getSelectedValues('edit-shopping', true);
+
+            editModal.classList.add('hidden');
+            // Save schedule with the current dates
+            saveScheduleData(scheduleData, new Date(startDatePicker.value), new Date(endDatePicker.value)); 
+            // UI refresh will be handled by onSnapshot listener after save
+        }
+
+        function cancelEditChanges() {
+            editModal.classList.add('hidden');
+        }
+    </script>
+
+</body>
+</html>
