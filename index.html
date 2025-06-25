@@ -206,7 +206,7 @@
             const newSchedule = []; let currentDate = new Date(startDate); const end = new Date(endDate);
             const taskCounts = [...family.adults, ...family.taskableChildren].reduce((acc, p) => ({...acc, [p]: 0}), {});
 
-            const getLeastBusy = (people) => people.sort((a,b) => taskCounts[a] - taskCounts[b]);
+            const getLeastBusy = (people) => [...people].sort((a,b) => taskCounts[a] - taskCounts[b]);
 
             const eligibleCooks = family.adults.filter(p => p !== 'Mathilde');
             const eligibleShoppers = family.adults.filter(p => p !== 'Mathilde' && p !== 'Marie' && p !== 'Ankie');
@@ -220,7 +220,7 @@
 
                 const assign = (people, count) => {
                     const assigned = [];
-                    const leastBusy = getLeastBusy([...people]);
+                    const leastBusy = getLeastBusy(people);
                     
                     for (const person of leastBusy) {
                         if (assigned.length >= count) break;
@@ -241,11 +241,11 @@
                 };
 
                 day.cooking = assign(eligibleCooks, 2);
-                day.houseCleaning = assign(family.adults, 1)[0] || '';
+                day.houseCleaning = assign(availableAdultsThisDay, 1)[0] || '';
                 if(newSchedule.length % 2 === 0) day.shopping = assign(eligibleShoppers, 2);
                 
                 day.dressing = assign(family.taskableChildren, 2);
-                day.cleaning = assign(availableChildrenThisDay, 2); // Use remaining children
+                day.cleaning = assign(availableChildrenThisDay, 2);
                 
                 newSchedule.push(day); currentDate.setDate(currentDate.getDate() + 1);
             }
@@ -324,7 +324,7 @@
             const assignedTasks = [];
             appData.schedule.forEach(day => {
                 const check = (taskData, taskName) => {
-                    const people = Array.isArray(taskData) ? taskData : [taskData];
+                    const people = Array.isArray(taskData) ? taskData : (taskData ? [taskData] : []);
                     if (people.includes(person)) {
                         assignedTasks.push({date: day.date, task: taskName});
                     }
@@ -454,9 +454,20 @@
         });
         el('generate-schedule-btn').addEventListener('click', async () => {
             const start = el('start-date').value, end = el('end-date').value;
-            if (!start || !end || new Date(start) > new Date(end)) return;
-            appData.schedule = generateSchedule(start, end); appData.expenses = []; appData.history = [];
-            await saveDataToFirestore();
+            if (!start || !end || new Date(start) > new Date(end)) {
+                 el('date-error').textContent = 'Please enter a valid date range.';
+                 return;
+            }
+            el('date-error').textContent = '';
+            
+            const newAppData = {
+                schedule: generateSchedule(start, end),
+                expenses: [],
+                history: []
+            };
+            appData = newAppData; // Update local state immediately
+            await saveDataToFirestore(); // Save to Firestore
+            // The onSnapshot listener will handle the UI update automatically
         });
         el('tab-tasks').addEventListener('click', (e) => { e.target.classList.add('active', 'border-teal-500'); el('tab-expenses').classList.remove('active', 'border-teal-500'); el('content-tasks').classList.remove('hidden'); el('content-expenses').classList.add('hidden'); });
         el('tab-expenses').addEventListener('click', (e) => { e.target.classList.add('active', 'border-teal-500'); el('tab-tasks').classList.remove('active', 'border-teal-500'); el('content-expenses').classList.remove('hidden'); el('content-tasks').classList.add('hidden'); });
@@ -513,8 +524,8 @@
         function logChanges(old, aNew) {
             const date = formatDate(old.date);
             const changed = (task, before, after) => {
-                const bStr = (Array.isArray(before) ? before : [before]).filter(Boolean).sort().join(', ') || 'none';
-                const aStr = (Array.isArray(after) ? after : [after]).filter(Boolean).sort().join(', ') || 'none';
+                const bStr = (Array.isArray(before) ? before : (before ? [before] : [])).filter(Boolean).sort().join(', ') || 'none';
+                const aStr = (Array.isArray(after) ? after : (after ? [after] : [])).filter(Boolean).sort().join(', ') || 'none';
                 if(bStr !== aStr) {
                     appData.history.push({
                         user: currentUserName,
@@ -545,13 +556,13 @@
         function formatDate(dateString, options = {}) {
             const date = new Date(dateString);
             const defaultOptions = { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC', ...options };
-            return new Intl.DateTimeFormat('en-GB', defaultOptions).format(date);
+            return new Intl.DateTimeFormat('fr-FR', defaultOptions).format(date);
         }
 
         function formatDateTime(dateString) {
             const date = new Date(dateString);
             const options = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' };
-            return new Intl.DateTimeFormat('en-GB', options).format(date);
+            return new Intl.DateTimeFormat('fr-FR', options).format(date).replace(',', '');
         }
     </script>
 </body>
