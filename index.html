@@ -460,20 +460,28 @@
             }
             el('date-error').textContent = '';
             
+            // FIX: Don't rely on listener for initial generation. Update UI directly.
             const newAppData = {
                 schedule: generateSchedule(start, end),
                 expenses: [],
                 history: []
             };
-            appData = newAppData; // Update local state immediately
+            appData = newAppData; // Update local state
             await saveDataToFirestore(); // Save to Firestore
-            // The onSnapshot listener will handle the UI update automatically
+            
+            // Since the listener will fire, we don't need to manually update the UI here.
+            // If the listener were not present, we would call:
+            // el('setup-screen').classList.add('hidden');
+            // el('main-app-screen').classList.remove('hidden');
+            // initializeAppUI();
         });
         el('tab-tasks').addEventListener('click', (e) => { e.target.classList.add('active', 'border-teal-500'); el('tab-expenses').classList.remove('active', 'border-teal-500'); el('content-tasks').classList.remove('hidden'); el('content-expenses').classList.add('hidden'); });
         el('tab-expenses').addEventListener('click', (e) => { e.target.classList.add('active', 'border-teal-500'); el('tab-tasks').classList.remove('active', 'border-teal-500'); el('content-expenses').classList.remove('hidden'); el('content-tasks').classList.add('hidden'); });
         el('expense-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            appData.expenses.push({ id: crypto.randomUUID(), date: new Date().toISOString(), description: el('expense-desc').value, amount: parseFloat(el('expense-amount').value), category: el('expense-category').value, paidBy: el('expense-paid-by').value });
+            const localAppData = JSON.parse(JSON.stringify(appData));
+            localAppData.expenses.push({ id: crypto.randomUUID(), date: new Date().toISOString(), description: el('expense-desc').value, amount: parseFloat(el('expense-amount').value), category: el('expense-category').value, paidBy: el('expense-paid-by').value });
+            appData = localAppData;
             await saveDataToFirestore();
             el('expense-form').reset();
         });
@@ -505,8 +513,9 @@
         }
 
         async function saveEditChanges() {
-            const oldData = JSON.parse(JSON.stringify(appData.schedule[currentDayIndex]));
-            const newData = appData.schedule[currentDayIndex];
+            const localAppData = JSON.parse(JSON.stringify(appData));
+            const oldData = localAppData.schedule[currentDayIndex];
+            const newData = localAppData.schedule[currentDayIndex];
             
             const getSelected = (id) => Array.from(el(id).selectedOptions).map(o => o.value);
             
@@ -516,18 +525,19 @@
             newData.dressing = getSelected('edit-dressing');
             newData.cleaning = getSelected('edit-cleaning');
             
-            logChanges(oldData, newData);
+            logChanges(oldData, newData, localAppData); // Pass localAppData to logChanges
+            appData = localAppData; // Update the global state
             await saveDataToFirestore();
             el('edit-task-modal').classList.add('hidden');
         }
 
-        function logChanges(old, aNew) {
+        function logChanges(old, aNew, data) {
             const date = formatDate(old.date);
             const changed = (task, before, after) => {
                 const bStr = (Array.isArray(before) ? before : (before ? [before] : [])).filter(Boolean).sort().join(', ') || 'none';
                 const aStr = (Array.isArray(after) ? after : (after ? [after] : [])).filter(Boolean).sort().join(', ') || 'none';
                 if(bStr !== aStr) {
-                    appData.history.push({
+                    data.history.push({
                         user: currentUserName,
                         timestamp: new Date().toISOString(),
                         change: `On ${date}, ${currentUserName} changed ${task} from [${bStr}] to [${aStr}].`
