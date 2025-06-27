@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Holiday Task & Expense Planner</title>
+    <script src="https://cdn.tailwindcss.com "></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js "></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .card { background-color: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); transition: transform 0.2s, box-shadow 0.2s; }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+        .btn-day, .btn-tab { transition: all 0.2s ease-in-out; }
+        .btn-day.active, .btn-tab.active { background-color: #0d9488; color: white; }
+        .btn-tab.active { transform: scale(1.05); }
+        .chart-container { position: relative; width: 100%; height: 300px; }
+        .hidden { display: none; }
+        .person-badge { display: inline-flex; align-items: center; background-color: #f1f5f9; border-radius: 9999px; padding: 0.25rem 0.75rem; margin: 0.25rem; font-size: 0.875rem; font-weight: 500; }
+        .person-color-dot { width: 0.75rem; height: 0.75rem; border-radius: 50%; margin-right: 0.5rem; border: 1px solid rgba(0,0,0,0.1); }
+        .modal { position: fixed; inset: 0; background-color: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 1rem; }
+        .explanation-text { font-size: 0.875rem; color: #475569; margin-top: 0.5rem; padding: 0.75rem; background-color: #f8fafc; border-radius: 0.5rem; }
+    </style>
+</head>
+<body class="text-slate-800">
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        <!-- Welcome Modal -->
+        <div id="welcome-modal" class="modal hidden">
+            <div class="card p-8 text-center max-w-md w-full">
+                <h2 class="text-2xl font-bold mb-2">Welcome to the Family Task Management System!</h2>
+                <p class="text-slate-600 mb-6">Please enter your name to continue.</p>
+                <form id="welcome-form">
+                    <input type="text" id="user-name-input" placeholder="Your Name" required class="w-full p-3 border border-slate-300 rounded-lg mb-4">
+                    <button type="submit" class="w-full px-6 py-3 bg-teal-600 text-white rounded-full font-semibold hover:bg-teal-700">Start Planning</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Main App Screen -->
+        <div id="main-app-screen" class="hidden">
+            <header class="relative text-center w-full mb-8">
+                <div class="absolute top-0 left-0 text-sm text-slate-500" id="user-display">User: </div>
+                <h1 id="app-title" class="text-4xl md:text-5xl font-bold text-slate-900">Family Holiday Planner</h1>
+                <p id="app-dates" class="mt-2 text-lg text-slate-600"></p>
+                <button id="changelog-btn" class="absolute top-0 right-0 text-sm text-teal-600 hover:underline hidden">View Change Log</button>
+            </header>
+
+            <!-- Generate Plan Section (shown only if no plan exists) -->
+            <div id="generate-plan-section" class="hidden text-center mb-8">
+                <div class="max-w-xl mx-auto card p-8">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">No Plan Found</h2>
+                    <p class="text-slate-600 mb-6">Select dates to generate the first plan for the holiday.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div><label for="start-date" class="block text-sm font-medium text-left">Start Date</label><input type="date" id="start-date" class="w-full p-3 border border-slate-300 rounded-lg"></div>
+                        <div><label for="end-date" class="block text-sm font-medium text-left">End Date</label><input type="date" id="end-date" class="w-full p-3 border border-slate-300 rounded-lg"></div>
+                    </div>
+                    <button id="generate-schedule-btn" class="w-full px-6 py-3 bg-teal-600 text-white rounded-full font-semibold">Generate Plan</button>
+                    <p id="date-error" class="text-red-500 mt-4 h-4"></p>
+                </div>
+            </div>
+
+            <!-- Planner Content -->
+            <div id="planner-content" class="hidden">
+                <div class="mb-8 flex justify-center border-b border-slate-200">
+                    <button id="tab-tasks" class="btn-tab text-lg font-semibold py-3 px-6 -mb-px border-b-2 border-transparent">Task Planner</button>
+                    <button id="tab-expenses" class="btn-tab text-lg font-semibold py-3 px-6 -mb-px border-b-2 border-transparent">Expense Tracker</button>
+                </div>
+
+                <!-- Tasks Tab -->
+                <div id="content-tasks">
+                    <main>
+                        <section class="mb-8">
+                            <h2 class="text-2xl font-bold mb-4 text-center">Select a Day</h2>
+                            <div id="day-selector" class="flex items-center space-x-2 overflow-x-auto pb-4"></div>
+                        </section>
+                        <section id="daily-view" class="mb-12">
+                            <div class="flex justify-between items-center mb-6">
+                                <h2 id="daily-view-title" class="text-3xl font-bold text-slate-800"></h2>
+                                <div>
+                                    <button id="edit-day-btn" class="text-sm bg-slate-200 px-3 py-2 rounded-full hover:bg-slate-300">Edit Tasks</button>
+                                    <button id="add-activity-btn" class="ml-2 text-sm bg-teal-500 text-white px-3 py-2 rounded-full hover:bg-teal-600">Add Activity</button>
+                                </div>
+                            </div>
+                            <div id="task-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                        </section>
+                        <section class="p-6 md:p-8 card">
+                            <h2 class="text-3xl font-bold mb-6 text-center">Analyze Tasks</h2>
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                <div>
+                                    <h3 class="text-xl font-bold mb-4">See Personal Tasks</h3>
+                                    <select id="person-filter" class="w-full p-3 border rounded-lg"></select>
+                                    <div id="personal-task-list" class="mt-4 space-y-2 max-h-80 overflow-y-auto"></div>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold mb-4">Family Task Distribution</h3>
+                                    <div class="chart-container"><canvas id="task-distribution-chart"></canvas></div>
+                                </div>
+                            </div>
+                        </section>
+                    </main>
+                </div>
+
+                <!-- Expenses Tab -->
+                <div id="content-expenses" class="hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-1 space-y-8">
+                            <div class="card p-6">
+                                <h3 class="text-xl font-bold mb-4">Add New Expense</h3>
+                                <form id="expense-form" class="space-y-4">
+                                    <div>
+                                        <label for="expense-desc">Description</label>
+                                        <input type="text" id="expense-desc" required class="mt-1 w-full p-2 border rounded-md">
+                                    </div>
+                                    <div>
+                                        <label for="expense-amount">Amount (€)</label>
+                                        <input type="number" id="expense-amount" step="0.01" required class="mt-1 w-full p-2 border rounded-md">
+                                    </div>
+                                    <div>
+                                        <label for="expense-category">Category</label>
+                                        <select id="expense-category" required class="mt-1 w-full p-2 border rounded-md">
+                                            <option>Groceries</option>
+                                            <option>Presents</option>
+                                            <option>Activities</option>
+                                            <option>Dining Out</option>
+                                            <option>Transport</option>
+                                            <option>Other</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="expense-paid-by">Paid By</label>
+                                        <select id="expense-paid-by" required class="mt-1 w-full p-2 border rounded-md"></select>
+                                    </div>
+                                    <button type="submit" class="w-full px-4 py-2 bg-teal-600 text-white rounded-full">Add Expense</button>
+                                </form>
+                            </div>
+                            <div class="card p-6">
+                                <h3 class="text-xl font-bold mb-4">Expense Log</h3>
+                                <div id="expense-log" class="space-y-3 max-h-96 overflow-y-auto"></div>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-2 space-y-8">
+                            <div class="card p-6">
+                                <h3 class="text-xl font-bold mb-4">Shared Cost Financial Analysis</h3>
+                                <div class="mb-4">
+                                    <h4 class="text-lg font-semibold mb-2">Select Categories for Settlement:</h4>
+                                    <div id="category-selector" class="flex flex-wrap gap-x-4 gap-y-2"></div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
+                                    <div>
+                                        <h4 class="text-lg font-semibold text-center">Shared Costs by Family</h4>
+                                        <div class="chart-container"><canvas id="family-spending-chart"></canvas></div>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-semibold text-center">Shared Spending by Category</h4>
+                                        <div class="chart-container"><canvas id="category-chart"></canvas></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card p-6">
+                                <h3 class="text-xl font-bold mb-4">Shared Cost Distribution</h3>
+                                <div id="calculation-explanation" class="explanation-text"></div>
+                                <div id="calculation-details-table" class="mt-4 overflow-x-auto"></div>
+                                <div id="settlement-summary" class="mt-4 space-y-6">
+                                    <div id="settlement-plan"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="edit-task-modal" class="modal hidden">
+        <div class="card p-8 w-full max-w-2xl">
+            <h3 id="edit-modal-title" class="text-2xl font-bold mb-6"></h3>
+            <div id="edit-form-content" class="space-y-4"></div>
+            <div class="mt-8 flex justify-end space-x-4">
+                <button id="cancel-edit-btn" class="px-6 py-2 bg-slate-200 rounded-full">Cancel</button>
+                <button id="save-edit-btn" class="px-6 py-2 bg-teal-600 text-white rounded-full">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="changelog-modal" class="modal hidden">
+        <div class="card p-8 w-full max-w-3xl">
+            <h3 class="text-2xl font-bold mb-6">Change Log</h3>
+            <div id="changelog-log" class="space-y-2 max-h-[70vh] overflow-y-auto"></div>
+            <div class="mt-8 text-right">
+                <button id="close-changelog-btn" class="px-6 py-2 bg-teal-600 text-white rounded-full">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-activity-modal" class="modal hidden">
+        <div class="card p-8 w-full max-w-lg">
+            <h3 class="text-2xl font-bold mb-6">Add an Activity</h3>
+            <form id="add-activity-form" class="space-y-4">
+                <label for="activity-url" class="block text-sm font-medium">Activity URL</label>
+                <input type="url" id="activity-url" placeholder=" https://example.com/activity " required class="w-full p-2 border rounded-md mt-1">
+                <div id="activity-loader" class="hidden mt-4 text-center">Fetching details...</div>
+                <div class="mt-6 flex justify-end space-x-4">
+                    <button type="button" id="cancel-activity-btn" class="px-6 py-2 bg-slate-200 rounded-full">Cancel</button>
+                    <button type="submit" class="px-6 py-2 bg-teal-600 text-white rounded-full">Fetch Details</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="view-activity-modal" class="modal hidden">
+        <div class="card p-0 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <img id="view-activity-img" src="" class="w-full h-64 object-cover" alt="Activity Image">
+            <div class="p-8">
+                <h3 id="view-activity-title" class="text-3xl font-bold mb-4"></h3>
+                <p id="view-activity-desc" class="text-slate-600 mb-6"></p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                    <div class="bg-slate-100 p-4 rounded-lg">
+                        <strong>Price</strong>
+                        <p id="view-activity-price"></p>
+                    </div>
+                    <div class="bg-slate-100 p-4 rounded-lg">
+                        <strong>Address</strong>
+                        <p id="view-activity-address"></p>
+                    </div>
+                    <div class="bg-slate-100 p-4 rounded-lg">
+                        <strong>Distance</strong>
+                        <p id="view-activity-distance"></p>
+                    </div>
+                </div>
+                <div class="mt-8 text-right">
+                    <button id="close-view-activity-btn" class="px-6 py-2 bg-teal-600 text-white rounded-full">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="delete-confirm-modal" class="modal hidden">
+        <div class="card p-8 text-center max-w-md w-full">
+            <h3 class="text-xl font-bold mb-4">Confirm Deletion</h3>
+            <p class="text-slate-600 mb-6">Are you sure you want to delete this activity?</p>
+            <div class="flex justify-center space-x-4">
+                <button id="cancel-delete-btn" class="px-6 py-2 bg-slate-200 rounded-full">Cancel</button>
+                <button id="confirm-delete-btn" class="px-6 py-2 bg-red-600 text-white rounded-full">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js ";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js ";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js ";
+
+        // ✅ YOUR FIREBASE CONFIG IS HERE
+        const firebaseConfig = {
+            apiKey: "AIzaSyAGo1LT6jVpvrGT8n63BQcxg01JURsGA_w",
+            authDomain: "familyholidayplanner-1a80f.firebaseapp.com",
+            projectId: "familyholidayplanner-1a80f",
+            storageBucket: "familyholidayplanner-1a80f.firebasestorage.app",
+            messagingSenderId: "865089162879",
+            appId: "1:865089162879:web:ac407bacf75d4ebbb4b94a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let appData = { schedule: [], expenses: [], history: [], sharedExpenseCategories: ['Groceries', 'Presents'] };
+        const family = {
+            adults: ["Miguel", "Ankie", "Juan", "Marie", "David", "Mathilde", "Eva"],
+            children: ["Noah", "Emma", "Mathias", "Florent", "Peneloppe"],
+            taskableChildren: ["Noah", "Emma", "Mathias", "Florent"]
+        };
+
+        const personColors = {
+            "Miguel": "#ef4444", "Ankie": "#f97316", "Juan": "#84cc16", "Marie": "#10b981",
+            "David": "#06b6d4", "Mathilde": "#6366f1", "Eva": "#d946ef",
+            "Noah": "#fde047", "Emma": "#fde047", "Mathias": "#fde047", "Florent": "#fde047"
+        };
+
+        let currentDayIndex = 0;
+        let currentUserName;
+
+        const el = id => document.getElementById(id);
+
+        async function setupFirestoreListener() {
+            const dataDocRef = doc(db, "plans", "mainPlan");
+            onSnapshot(dataDocRef, (docSnap) => {
+                el('main-app-screen').classList.remove('hidden');
+                if (docSnap.exists()) {
+                    appData = docSnap.data();
+                    el('generate-plan-section').classList.add('hidden');
+                    el('planner-content').classList.remove('hidden');
+                    initializeAppUI();
+                } else {
+                    el('planner-content').classList.add('hidden');
+                    el('generate-plan-section').classList.remove('hidden');
+                }
+            });
+        }
+
+        async function saveDataToFirestore(data) {
+            const dataDocRef = doc(db, "plans", "mainPlan");
+            await setDoc(dataDocRef, data);
+        }
+
+        function generateSchedule(startDate, endDate) {
+            const newSchedule = [];
+            let currentDate = new Date(startDate);
+            const end = new Date(endDate);
+            while(currentDate <= end) {
+                newSchedule.push({ date: currentDate.toISOString().split('T')[0], cooking: [], houseCleaning: '', shopping: [], dressing: [], cleaning: [], notes: "", activities: [] });
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            return newSchedule;
+        }
+
+        function initializeAppUI() {
+            if (!appData.schedule || appData.schedule.length === 0) return;
+            const firstDay = formatDate(appData.schedule[0].date);
+            const lastDay = formatDate(appData.schedule[appData.schedule.length - 1].date);
+            el('app-dates').textContent = `${firstDay} - ${lastDay}`;
+            populatePersonFilter();
+            populateExpensePaidBySelect();
+            renderAll();
+        }
+
+        function renderAll() {
+            if (!appData.schedule || appData.schedule.length === 0) return;
+            populateDaySelector();
+            displayDay(currentDayIndex);
+        }
+
+        function populateDaySelector() {
+            const daySelector = el('day-selector'); 
+            daySelector.innerHTML = '';
+            appData.schedule.forEach((day, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-day flex-shrink-0 text-sm md:text-base font-semibold py-2 px-4 rounded-full bg-white shadow-sm';
+                if(index === currentDayIndex) btn.classList.add('active');
+                const date = new Date(day.date);
+                btn.innerHTML = `<span class="font-normal text-xs">${date.toLocaleDateString('en-US', { weekday: 'short' })}</span> ${date.getDate()}`;
+                btn.onclick = () => { currentDayIndex = index; renderAll(); };
+                daySelector.appendChild(btn);
+            });
+        }
+
+        function displayDay(index) {
+            const dayData = appData.schedule[index];
+            if (!dayData) return;
+            el('daily-view-title').innerHTML = formatDate(dayData.date, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            el('task-grid').innerHTML = '';
+            const allTasks = { "Cooking": "🍳", "House Cleaning": "🧹", "Shopping": "🛒", "Dressing Table": "🍽️", "Cleaning Table": "🧽" };
+            for(const taskName in allTasks){
+                let people = [];
+                switch(taskName) {
+                    case "Cooking": people = dayData.cooking; break;
+                    case "House Cleaning": people = [dayData.houseCleaning]; break;
+                    case "Shopping": people = dayData.shopping; break;
+                    case "Dressing Table": people = dayData.dressing; break;
+                    case "Cleaning Table": people = dayData.cleaning; break;
+                }
+                createTaskCard(taskName, people, allTasks[taskName]);
+            }
+        }
+
+        function createTaskCard(title, people, icon) {
+            const personArray = Array.isArray(people) ? people : (people ? [people] : []);
+            const card = document.createElement('div');
+            card.className = 'card p-6 flex flex-col items-center text-center';
+            let peopleHTML = personArray.map(p => `<span class="person-badge"><span class="person-color-dot" style="background-color:${personColors[p] || '#d1d5db'}"></span>${p}</span>`).join('');
+            if(personArray.length === 0 || !personArray[0]) {
+                peopleHTML = '<span class="text-slate-500">No one assigned</span>';
+            }
+            card.innerHTML = `<div class="text-4xl mb-3">${icon}</div><h3 class="text-xl font-bold mb-3">${title}</h3><div class="flex flex-wrap justify-center">${peopleHTML}</div>`;
+            el('task-grid').appendChild(card);
+        }
+
+        function populatePersonFilter() {
+            const personFilter = el('person-filter');
+            personFilter.innerHTML = `<option value="all">Show All</option>`;
+            [...family.adults, ...family.children].sort().forEach(p => personFilter.add(new Option(p, p)));
+        }
+
+        function populateExpensePaidBySelect() {
+            const expensePaidBySelect = el('expense-paid-by');
+            expensePaidBySelect.innerHTML = '';
+            family.adults.forEach(p => expensePaidBySelect.add(new Option(p, p)));
+        }
+
+        function formatDate(dateString, options = {}) {
+            const date = new Date(dateString);
+            const defaultOptions = { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC', ...options };
+            return new Intl.DateTimeFormat('fr-FR', defaultOptions).format(date);
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', async () => {
+            onAuthStateChanged(auth, async (user) => {
+                if (!user) await signInAnonymously(auth);
+                currentUserName = localStorage.getItem('holidayPlannerUser') || 'Guest';
+                el('user-display').textContent = `User: ${currentUserName}`;
+                setupFirestoreListener();
+            });
+        });
+
+        el('welcome-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            currentUserName = el('user-name-input').value;
+            localStorage.setItem('holidayPlannerUser', currentUserName);
+            el('user-display').textContent = `User: ${currentUserName}`;
+            el('welcome-modal').classList.add('hidden');
+            setupFirestoreListener();
+        });
+
+        el('generate-schedule-btn').addEventListener('click', async () => {
+            const start = el('start-date').value;
+            const end = el('end-date').value;
+            if (!start || !end || new Date(start) > new Date(end)) {
+                el('date-error').textContent = 'Please enter a valid date range.';
+                return;
+            }
+            const newAppData = { schedule: generateSchedule(start, end), expenses: [], history: [], sharedExpenseCategories: ['Groceries', 'Presents'] };
+            await saveDataToFirestore(newAppData);
+        });
+
+        el('tab-tasks').addEventListener('click', () => {
+            el('tab-tasks').classList.add('active');
+            el('tab-expenses').classList.remove('active');
+            el('content-tasks').classList.remove('hidden');
+            el('content-expenses').classList.add('hidden');
+        });
+
+        el('tab-expenses').addEventListener('click', () => {
+            el('tab-expenses').classList.add('active');
+            el('tab-tasks').classList.remove('active');
+            el('content-expenses').classList.remove('hidden');
+            el('content-tasks').classList.add('hidden');
+        });
+
+        el('add-activity-btn').addEventListener('click', () => {
+            el('add-activity-modal').classList.remove('hidden');
+        });
+
+        el('cancel-activity-btn').addEventListener('click', () => {
+            el('add-activity-modal').classList.add('hidden');
+        });
+
+        el('add-activity-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            alert("Manual activity input is not yet implemented.");
+        });
+
+        el('expense-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const localData = JSON.parse(JSON.stringify(appData));
+            localData.expenses.push({
+                id: crypto.randomUUID(),
+                description: el('expense-desc').value,
+                amount: parseFloat(el('expense-amount').value),
+                category: el('expense-category').value,
+                paidBy: el('expense-paid-by').value
+            });
+            await saveDataToFirestore(localData);
+            el('expense-form').reset();
+        });
+
+        el('changelog-btn').addEventListener('click', () => {
+            el('changelog-modal').classList.remove('hidden');
+        });
+
+        el('close-changelog-btn').addEventListener('click', () => {
+            el('changelog-modal').classList.add('hidden');
+        });
+
+        // Initialize Firebase Auth
+        const { getAuth, signInAnonymously, onAuthStateChanged } = require("firebase/auth");
+
+        const auth = getAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                signInAnonymously(auth)
+                    .then(() => console.log("Signed in anonymously"))
+                    .catch((error) => console.error("Anonymous sign-in failed:", error));
+            }
+        });
+    </script>
+</body>
+</html>
