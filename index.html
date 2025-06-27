@@ -116,165 +116,104 @@
     </div>
 
     <!-- Script Section -->
-    <script type="module">
-        // Firebase imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js ";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js ";
-        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js ";
+<script type="module">
+    // Firebase imports
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js ';
+    import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js ';
+    import { getFirestore, doc, onSnapshot, setDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js ';
 
-        // Firebase config (yours)
-        const firebaseConfig = {
-            apiKey: "AIzaSyAGo1LT6jVpvrGT8n63BQcxg01JURsGA_w",
-            authDomain: "familyholidayplanner-1a80f.firebaseapp.com",
-            projectId: "familyholidayplanner-1a80f",
-            storageBucket: "familyholidayplanner-1a80f.appspot.com",
-            messagingSenderId: "865089162879",
-            appId: "1:865089162879:web:ac407bacf75d4ebbb4b94a"
+    // Firebase config (yours)
+    const firebaseConfig = {
+        apiKey: "AIzaSyAGo1LT6jVpvrGT8n63BQcxg01JURsGA_w",
+        authDomain: "familyholidayplanner-1a80f.firebaseapp.com",
+        projectId: "familyholidayplanner-1a80f",
+        storageBucket: "familyholidayplanner-1a80f.appspot.com",
+        messagingSenderId: "865089162879",
+        appId: "1:865089162879:web:ac407bacf75d4ebbb4b94a"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    let appData = { schedule: [], expenses: [], history: [] };
+    const family = {
+        adults: ["Miguel", "Ankie", "Juan", "Marie", "David", "Mathilde", "Eva"],
+        children: ["Noah", "Emma", "Mathias", "Florent", "Peneloppe"]
+    };
+    let currentUserName = '';
+
+    function setupFirestoreListener() {
+        const dataDocRef = doc(db, "plans", "mainPlan");
+        onSnapshot(dataDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                appData = docSnap.data();
+                document.getElementById('main-app-screen').classList.remove('hidden');
+            } else {
+                document.getElementById('generate-plan-section').classList.remove('hidden');
+            }
+        });
+    }
+
+    async function saveDataToFirestore(data) {
+        const dataDocRef = doc(db, "plans", "mainPlan");
+        await setDoc(dataDocRef, data);
+    }
+
+    function generateSchedule(startDate, endDate) {
+        const newSchedule = [];
+        let currentDate = new Date(startDate);
+        const end = new Date(endDate);
+        while(currentDate <= end) {
+            newSchedule.push({
+                date: currentDate.toISOString().split('T')[0],
+                cooking: [],
+                houseCleaning: '',
+                shopping: [],
+                dressing: [],
+                cleaning: [],
+                notes: "",
+                activities: []
+            });
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        return newSchedule;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedName = localStorage.getItem('holidayPlannerUser') || 'Guest';
+        currentUserName = savedName;
+        document.getElementById('user-display').textContent = `User: ${currentUserName}`;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) await signInAnonymously(auth);
+            setupFirestoreListener();
+        });
+    });
+
+    document.getElementById('welcome-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        currentUserName = document.getElementById('user-name-input').value;
+        localStorage.setItem('holidayPlannerUser', currentUserName);
+        document.getElementById('user-display').textContent = `User: ${currentUserName}`;
+        document.getElementById('welcome-modal').classList.add('hidden');
+    });
+
+    document.getElementById('generate-schedule-btn')?.addEventListener('click', async () => {
+        const start = document.getElementById('start-date').value;
+        const end = document.getElementById('end-date').value;
+        if (!start || !end || new Date(start) > new Date(end)) {
+            document.getElementById('date-error').textContent = 'Please enter a valid date range.';
+            return;
+        }
+        const newAppData = {
+            schedule: generateSchedule(start, end),
+            expenses: [],
+            history: []
         };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-
-        let appData = { schedule: [], expenses: [], history: [] };
-        let currentUserName = '';
-
-        const family = {
-            adults: ["Miguel", "Ankie", "Juan", "Marie", "David", "Mathilde", "Eva"],
-            children: ["Noah", "Emma", "Mathias", "Florent", "Peneloppe"]
-        };
-
-        const el = id => document.getElementById(id);
-
-        // Setup Firestore listener
-        function setupFirestoreListener() {
-            const dataDocRef = doc(db, "plans", "mainPlan");
-            onSnapshot(dataDocRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    appData = docSnap.data();
-                    el('main-app-screen').classList.remove('hidden');
-                    el('planner-content').classList.remove('hidden');
-                    el('generate-plan-section').classList.add('hidden');
-                } else {
-                    el('generate-plan-section').classList.remove('hidden');
-                    el('planner-content').classList.add('hidden');
-                }
-            });
-        }
-
-        async function saveDataToFirestore(data) {
-            const dataDocRef = doc(db, "plans", "mainPlan");
-            await setDoc(dataDocRef, data);
-        }
-
-        function generateSchedule(startDate, endDate) {
-            const newSchedule = [];
-            let currentDate = new Date(startDate);
-            const end = new Date(endDate);
-            while(currentDate <= end) {
-                newSchedule.push({
-                    date: currentDate.toISOString().split('T')[0],
-                    cooking: [],
-                    houseCleaning: '',
-                    shopping: [],
-                    dressing: [],
-                    cleaning: [],
-                    notes: "",
-                    activities: []
-                });
-                currentDate.setDate(currentDate.getDate() + 1);
-            }
-            return newSchedule;
-        }
-
-        function populateDaySelector() {
-            const daySelector = el('day-selector');
-            daySelector.innerHTML = '';
-            appData.schedule.forEach((day, index) => {
-                const btn = document.createElement('button');
-                btn.className = 'btn-day flex-shrink-0 text-sm md:text-base font-semibold py-2 px-4 rounded-full bg-white shadow-sm';
-                if(index === 0) btn.classList.add('active');
-                const date = new Date(day.date);
-                btn.textContent = `${date.toLocaleDateString('en-US', { weekday: 'short' })} ${date.getDate()}`;
-                btn.onclick = () => displayDay(index);
-                daySelector.appendChild(btn);
-            });
-        }
-
-        function displayDay(index) {
-            const dayData = appData.schedule[index];
-            if (!dayData) return;
-
-            const titleEl = el('daily-view-title');
-            titleEl.textContent = formatDate(dayData.date, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-            const taskGrid = el('task-grid');
-            taskGrid.innerHTML = '';
-            const allTasks = { "Cooking": "🍳", "House Cleaning": "🧹", "Shopping": "🛒", "Dressing Table": "🍽️", "Cleaning Table": "🧽" };
-
-            for (const taskName in allTasks) {
-                const card = document.createElement('div');
-                card.className = 'card p-6 flex flex-col items-center text-center';
-
-                const icon = allTasks[taskName];
-                card.innerHTML = `<div class="text-4xl mb-3">${icon}</div><h3 class="text-xl font-bold mb-3">${taskName}</h3><div class="text-slate-600">No one assigned yet</div>`;
-                taskGrid.appendChild(card);
-            }
-        }
-
-        function formatDate(dateString, options = {}) {
-            const date = new Date(dateString);
-            const defaultOptions = { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC', ...options };
-            return new Intl.DateTimeFormat('fr-FR', defaultOptions).format(date);
-        }
-
-        // Event Listeners
-        document.addEventListener('DOMContentLoaded', () => {
-            const savedName = localStorage.getItem('holidayPlannerUser') || 'Guest';
-            currentUserName = savedName;
-            el('user-display').textContent = `User: ${currentUserName}`;
-
-            onAuthStateChanged(auth, async (user) => {
-                if (!user) await signInAnonymously(auth);
-                setupFirestoreListener();
-            });
-        });
-
-        el('welcome-form')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            currentUserName = el('user-name-input').value;
-            localStorage.setItem('holidayPlannerUser', currentUserName);
-            el('user-display').textContent = `User: ${currentUserName}`;
-            el('welcome-modal').classList.add('hidden');
-        });
-
-        el('generate-schedule-btn')?.addEventListener('click', async () => {
-            const start = el('start-date').value;
-            const end = el('end-date').value;
-            if (!start || !end || new Date(start) > new Date(end)) {
-                el('date-error').textContent = 'Please enter a valid date range.';
-                return;
-            }
-            el('date-error').textContent = '';
-            const newAppData = { schedule: generateSchedule(start, end), expenses: [], history: [] };
-            await saveDataToFirestore(newAppData);
-        });
-
-        // Tabs
-        el('tab-tasks')?.addEventListener('click', () => {
-            el('tab-tasks').classList.add('active');
-            el('tab-expenses').classList.remove('active');
-            el('content-tasks').classList.remove('hidden');
-            el('content-expenses').classList.add('hidden');
-        });
-
-        el('tab-expenses')?.addEventListener('click', () => {
-            el('tab-expenses').classList.add('active');
-            el('tab-tasks').classList.remove('active');
-            el('content-expenses').classList.remove('hidden');
-            el('content-tasks').classList.add('hidden');
-        });
-    </script>
+        await saveDataToFirestore(newAppData);
+    });
+</script>
 </body>
 </html>
