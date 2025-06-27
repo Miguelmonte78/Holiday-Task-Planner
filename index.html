@@ -123,19 +123,10 @@
     import { getFirestore, doc, onSnapshot, setDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js ';
 
     // Firebase config (yours)
-    const firebaseConfig = {
-        apiKey: "AIzaSyAGo1LT6jVpvrGT8n63BQcxg01JURsGA_w",
-        authDomain: "familyholidayplanner-1a80f.firebaseapp.com",
-        projectId: "familyholidayplanner-1a80f",
-        storageBucket: "familyholidayplanner-1a80f.appspot.com",
-        messagingSenderId: "865089162879",
-        appId: "1:865089162879:web:ac407bacf75d4ebbb4b94a"
-    };
+   
 
     // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+
 
     let appData = { schedule: [], expenses: [], history: [] };
     const family = {
