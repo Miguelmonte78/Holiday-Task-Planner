@@ -252,239 +252,122 @@
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js ";
 
         // ✅ YOUR FIREBASE CONFIG IS HERE
-        const firebaseConfig = {
-            apiKey: "AIzaSyAGo1LT6jVpvrGT8n63BQcxg01JURsGA_w",
-            authDomain: "familyholidayplanner-1a80f.firebaseapp.com",
-            projectId: "familyholidayplanner-1a80f",
-            storageBucket: "familyholidayplanner-1a80f.firebasestorage.app",
-            messagingSenderId: "865089162879",
-            appId: "1:865089162879:web:ac407bacf75d4ebbb4b94a"
-        };
+<script type="module">
+    // Firebase App + Auth + Firestore
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js ";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js ";
+    import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js ";
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+    // Your Firebase config
+    const firebaseConfig = {
+        apiKey: "AIzaSyAGo1LT6jVpvrGT8n63BQcxg01JURsGA_w",
+        authDomain: "familyholidayplanner-1a80f.firebaseapp.com",
+        projectId: "familyholidayplanner-1a80f",
+        storageBucket: "familyholidayplanner-1a80f.appspot.com",
+        messagingSenderId: "865089162879",
+        appId: "1:865089162879:web:ac407bacf75d4ebbb4b94a"
+    };
 
-        let appData = { schedule: [], expenses: [], history: [], sharedExpenseCategories: ['Groceries', 'Presents'] };
-        const family = {
-            adults: ["Miguel", "Ankie", "Juan", "Marie", "David", "Mathilde", "Eva"],
-            children: ["Noah", "Emma", "Mathias", "Florent", "Peneloppe"],
-            taskableChildren: ["Noah", "Emma", "Mathias", "Florent"]
-        };
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
-        const personColors = {
-            "Miguel": "#ef4444", "Ankie": "#f97316", "Juan": "#84cc16", "Marie": "#10b981",
-            "David": "#06b6d4", "Mathilde": "#6366f1", "Eva": "#d946ef",
-            "Noah": "#fde047", "Emma": "#fde047", "Mathias": "#fde047", "Florent": "#fde047"
-        };
+    let appData = { schedule: [], expenses: [], history: [], sharedExpenseCategories: ['Groceries', 'Presents'] };
+    const family = {
+        adults: ["Miguel", "Ankie", "Juan", "Marie", "David", "Mathilde", "Eva"],
+        children: ["Noah", "Emma", "Mathias", "Florent", "Peneloppe"],
+        taskableChildren: ["Noah", "Emma", "Mathias", "Florent"]
+    };
+    let currentDayIndex = 0;
+    let currentUserName;
 
-        let currentDayIndex = 0;
-        let currentUserName;
+    const el = id => document.getElementById(id);
 
-        const el = id => document.getElementById(id);
-
-        async function setupFirestoreListener() {
-            const dataDocRef = doc(db, "plans", "mainPlan");
-            onSnapshot(dataDocRef, (docSnap) => {
+    // Setup Firestore listener
+    function setupFirestoreListener() {
+        const dataDocRef = doc(db, "plans", "mainPlan");
+        onSnapshot(dataDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                appData = docSnap.data();
                 el('main-app-screen').classList.remove('hidden');
-                if (docSnap.exists()) {
-                    appData = docSnap.data();
-                    el('generate-plan-section').classList.add('hidden');
-                    el('planner-content').classList.remove('hidden');
-                    initializeAppUI();
-                } else {
-                    el('planner-content').classList.add('hidden');
-                    el('generate-plan-section').classList.remove('hidden');
-                }
-            });
-        }
-
-        async function saveDataToFirestore(data) {
-            const dataDocRef = doc(db, "plans", "mainPlan");
-            await setDoc(dataDocRef, data);
-        }
-
-        function generateSchedule(startDate, endDate) {
-            const newSchedule = [];
-            let currentDate = new Date(startDate);
-            const end = new Date(endDate);
-            while(currentDate <= end) {
-                newSchedule.push({ date: currentDate.toISOString().split('T')[0], cooking: [], houseCleaning: '', shopping: [], dressing: [], cleaning: [], notes: "", activities: [] });
-                currentDate.setDate(currentDate.getDate() + 1);
+                initializeAppUI();
+            } else {
+                el('generate-plan-section').classList.remove('hidden');
             }
-            return newSchedule;
-        }
-
-        function initializeAppUI() {
-            if (!appData.schedule || appData.schedule.length === 0) return;
-            const firstDay = formatDate(appData.schedule[0].date);
-            const lastDay = formatDate(appData.schedule[appData.schedule.length - 1].date);
-            el('app-dates').textContent = `${firstDay} - ${lastDay}`;
-            populatePersonFilter();
-            populateExpensePaidBySelect();
-            renderAll();
-        }
-
-        function renderAll() {
-            if (!appData.schedule || appData.schedule.length === 0) return;
-            populateDaySelector();
-            displayDay(currentDayIndex);
-        }
-
-        function populateDaySelector() {
-            const daySelector = el('day-selector'); 
-            daySelector.innerHTML = '';
-            appData.schedule.forEach((day, index) => {
-                const btn = document.createElement('button');
-                btn.className = 'btn-day flex-shrink-0 text-sm md:text-base font-semibold py-2 px-4 rounded-full bg-white shadow-sm';
-                if(index === currentDayIndex) btn.classList.add('active');
-                const date = new Date(day.date);
-                btn.innerHTML = `<span class="font-normal text-xs">${date.toLocaleDateString('en-US', { weekday: 'short' })}</span> ${date.getDate()}`;
-                btn.onclick = () => { currentDayIndex = index; renderAll(); };
-                daySelector.appendChild(btn);
-            });
-        }
-
-        function displayDay(index) {
-            const dayData = appData.schedule[index];
-            if (!dayData) return;
-            el('daily-view-title').innerHTML = formatDate(dayData.date, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            el('task-grid').innerHTML = '';
-            const allTasks = { "Cooking": "🍳", "House Cleaning": "🧹", "Shopping": "🛒", "Dressing Table": "🍽️", "Cleaning Table": "🧽" };
-            for(const taskName in allTasks){
-                let people = [];
-                switch(taskName) {
-                    case "Cooking": people = dayData.cooking; break;
-                    case "House Cleaning": people = [dayData.houseCleaning]; break;
-                    case "Shopping": people = dayData.shopping; break;
-                    case "Dressing Table": people = dayData.dressing; break;
-                    case "Cleaning Table": people = dayData.cleaning; break;
-                }
-                createTaskCard(taskName, people, allTasks[taskName]);
-            }
-        }
-
-        function createTaskCard(title, people, icon) {
-            const personArray = Array.isArray(people) ? people : (people ? [people] : []);
-            const card = document.createElement('div');
-            card.className = 'card p-6 flex flex-col items-center text-center';
-            let peopleHTML = personArray.map(p => `<span class="person-badge"><span class="person-color-dot" style="background-color:${personColors[p] || '#d1d5db'}"></span>${p}</span>`).join('');
-            if(personArray.length === 0 || !personArray[0]) {
-                peopleHTML = '<span class="text-slate-500">No one assigned</span>';
-            }
-            card.innerHTML = `<div class="text-4xl mb-3">${icon}</div><h3 class="text-xl font-bold mb-3">${title}</h3><div class="flex flex-wrap justify-center">${peopleHTML}</div>`;
-            el('task-grid').appendChild(card);
-        }
-
-        function populatePersonFilter() {
-            const personFilter = el('person-filter');
-            personFilter.innerHTML = `<option value="all">Show All</option>`;
-            [...family.adults, ...family.children].sort().forEach(p => personFilter.add(new Option(p, p)));
-        }
-
-        function populateExpensePaidBySelect() {
-            const expensePaidBySelect = el('expense-paid-by');
-            expensePaidBySelect.innerHTML = '';
-            family.adults.forEach(p => expensePaidBySelect.add(new Option(p, p)));
-        }
-
-        function formatDate(dateString, options = {}) {
-            const date = new Date(dateString);
-            const defaultOptions = { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC', ...options };
-            return new Intl.DateTimeFormat('fr-FR', defaultOptions).format(date);
-        }
-
-        // Event Listeners
-        document.addEventListener('DOMContentLoaded', async () => {
-            onAuthStateChanged(auth, async (user) => {
-                if (!user) await signInAnonymously(auth);
-                currentUserName = localStorage.getItem('holidayPlannerUser') || 'Guest';
-                el('user-display').textContent = `User: ${currentUserName}`;
-                setupFirestoreListener();
-            });
         });
+    }
 
-        el('welcome-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            currentUserName = el('user-name-input').value;
-            localStorage.setItem('holidayPlannerUser', currentUserName);
-            el('user-display').textContent = `User: ${currentUserName}`;
-            el('welcome-modal').classList.add('hidden');
+    async function saveDataToFirestore(data) {
+        const dataDocRef = doc(db, "plans", "mainPlan");
+        await setDoc(dataDocRef, data);
+    }
+
+    function generateSchedule(startDate, endDate) {
+        const newSchedule = [];
+        let currentDate = new Date(startDate);
+        const end = new Date(endDate);
+        while(currentDate <= end) {
+            newSchedule.push({
+                date: currentDate.toISOString().split('T')[0],
+                cooking: [],
+                houseCleaning: '',
+                shopping: [],
+                dressing: [],
+                cleaning: [],
+                notes: "",
+                activities: []
+            });
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        return newSchedule;
+    }
+
+    function initializeAppUI() {
+        el('user-display').textContent = `User: ${currentUserName}`;
+    }
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+        const user = localStorage.getItem('holidayPlannerUser') || 'Guest';
+        currentUserName = user;
+        el('user-display').textContent = `User: ${currentUserName}`;
+
+        // Firebase auth
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) await signInAnonymously(auth);
             setupFirestoreListener();
         });
+    });
 
-        el('generate-schedule-btn').addEventListener('click', async () => {
-            const start = el('start-date').value;
-            const end = el('end-date').value;
-            if (!start || !end || new Date(start) > new Date(end)) {
-                el('date-error').textContent = 'Please enter a valid date range.';
-                return;
-            }
-            const newAppData = { schedule: generateSchedule(start, end), expenses: [], history: [], sharedExpenseCategories: ['Groceries', 'Presents'] };
-            await saveDataToFirestore(newAppData);
-        });
+    el('welcome-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        currentUserName = el('user-name-input').value;
+        localStorage.setItem('holidayPlannerUser', currentUserName);
+        el('user-display').textContent = `User: ${currentUserName}`;
+        el('welcome-modal').classList.add('hidden');
+    });
 
-        el('tab-tasks').addEventListener('click', () => {
-            el('tab-tasks').classList.add('active');
-            el('tab-expenses').classList.remove('active');
-            el('content-tasks').classList.remove('hidden');
-            el('content-expenses').classList.add('hidden');
-        });
+    el('generate-schedule-btn')?.addEventListener('click', async () => {
+        const start = el('start-date').value;
+        const end = el('end-date').value;
+        if (!start || !end || new Date(start) > new Date(end)) {
+            el('date-error').textContent = 'Please enter a valid date range.';
+            return;
+        }
+        const newAppData = {
+            schedule: generateSchedule(start, end),
+            expenses: [],
+            history: [],
+            sharedExpenseCategories: ['Groceries', 'Presents']
+        };
+        await saveDataToFirestore(newAppData);
+    });
 
-        el('tab-expenses').addEventListener('click', () => {
-            el('tab-expenses').classList.add('active');
-            el('tab-tasks').classList.remove('active');
-            el('content-expenses').classList.remove('hidden');
-            el('content-tasks').classList.add('hidden');
-        });
-
-        el('add-activity-btn').addEventListener('click', () => {
-            el('add-activity-modal').classList.remove('hidden');
-        });
-
-        el('cancel-activity-btn').addEventListener('click', () => {
-            el('add-activity-modal').classList.add('hidden');
-        });
-
-        el('add-activity-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            alert("Manual activity input is not yet implemented.");
-        });
-
-        el('expense-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const localData = JSON.parse(JSON.stringify(appData));
-            localData.expenses.push({
-                id: crypto.randomUUID(),
-                description: el('expense-desc').value,
-                amount: parseFloat(el('expense-amount').value),
-                category: el('expense-category').value,
-                paidBy: el('expense-paid-by').value
-            });
-            await saveDataToFirestore(localData);
-            el('expense-form').reset();
-        });
-
-        el('changelog-btn').addEventListener('click', () => {
-            el('changelog-modal').classList.remove('hidden');
-        });
-
-        el('close-changelog-btn').addEventListener('click', () => {
-            el('changelog-modal').classList.add('hidden');
-        });
-
-        // Initialize Firebase Auth
-        const { getAuth, signInAnonymously, onAuthStateChanged } = require("firebase/auth");
-
-        const auth = getAuth();
-
-        onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                signInAnonymously(auth)
-                    .then(() => console.log("Signed in anonymously"))
-                    .catch((error) => console.error("Anonymous sign-in failed:", error));
-            }
-        });
-    </script>
+    // Minimal UI helpers
+    function el(id) {
+        return document.getElementById(id);
+    }
+</script>
 </body>
 </html>
