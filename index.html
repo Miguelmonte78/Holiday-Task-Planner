@@ -59,12 +59,14 @@
                 </div>
             </div>
 
-            <!-- Planner Content (Tabs, tasks, expenses) -->
+            <!-- Planner Content -->
             <div id="planner-content" class="hidden">
                 <div class="mb-8 flex justify-center border-b border-slate-200">
                     <button id="tab-tasks" class="btn-tab text-lg font-semibold py-3 px-6 -mb-px border-b-2 border-transparent">Task Planner</button>
                     <button id="tab-expenses" class="btn-tab text-lg font-semibold py-3 px-6 -mb-px border-b-2 border-transparent">Expense Tracker</button>
                 </div>
+
+                <!-- Tasks Tab -->
                 <div id="content-tasks">
                     <main>
                         <section class="mb-8">
@@ -84,17 +86,57 @@
                         <section class="p-6 md:p-8 card">
                             <h2 class="text-3xl font-bold mb-6 text-center">Analyze Tasks</h2>
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                <div><h3 class="text-xl font-bold mb-4">See Personal Tasks</h3><select id="person-filter" class="w-full p-3 border rounded-lg"></select><div id="personal-task-list" class="mt-4 space-y-2 max-h-80 overflow-y-auto"></div></div>
-                                <div><h3 class="text-xl font-bold mb-4">Family Task Distribution</h3><div class="chart-container"><canvas id="task-distribution-chart"></canvas></div></div>
+                                <div>
+                                    <h3 class="text-xl font-bold mb-4">See Personal Tasks</h3>
+                                    <select id="person-filter" class="w-full p-3 border rounded-lg"></select>
+                                    <div id="personal-task-list" class="mt-4 space-y-2 max-h-80 overflow-y-auto"></div>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold mb-4">Family Task Distribution</h3>
+                                    <div class="chart-container"><canvas id="task-distribution-chart"></canvas></div>
+                                </div>
                             </div>
                         </section>
                     </main>
                 </div>
+
+                <!-- Expenses Tab -->
                 <div id="content-expenses" class="hidden">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div class="lg:col-span-1 space-y-8">
-                            <div class="card p-6"><h3 class="text-xl font-bold mb-4">Add New Expense</h3><form id="expense-form" class="space-y-4"><div><label for="expense-desc">Description</label><input type="text" id="expense-desc" required class="mt-1 w-full p-2 border rounded-md"></div><div><label for="expense-amount">Amount (€)</label><input type="number" id="expense-amount" step="0.01" required class="mt-1 w-full p-2 border rounded-md"></div><div><label for="expense-category">Category</label><select id="expense-category" required class="mt-1 w-full p-2 border rounded-md"><option>Groceries</option><option>Presents</option><option>Activities</option><option>Dining Out</option><option>Transport</option><option>Other</option></select></div><div><label for="expense-paid-by">Paid By</label><select id="expense-paid-by" required class="mt-1 w-full p-2 border rounded-md"></select></div><button type="submit" class="w-full px-4 py-2 bg-teal-600 text-white rounded-full">Add Expense</button></form></div>
-                            <div class="card p-6"><h3 class="text-xl font-bold mb-4">Expense Log</h3><div id="expense-log" class="space-y-3 max-h-96 overflow-y-auto"></div></div>
+                            <div class="card p-6">
+                                <h3 class="text-xl font-bold mb-4">Add New Expense</h3>
+                                <form id="expense-form" class="space-y-4">
+                                    <div>
+                                        <label for="expense-desc">Description</label>
+                                        <input type="text" id="expense-desc" required class="mt-1 w-full p-2 border rounded-md">
+                                    </div>
+                                    <div>
+                                        <label for="expense-amount">Amount (€)</label>
+                                        <input type="number" id="expense-amount" step="0.01" required class="mt-1 w-full p-2 border rounded-md">
+                                    </div>
+                                    <div>
+                                        <label for="expense-category">Category</label>
+                                        <select id="expense-category" required class="mt-1 w-full p-2 border rounded-md">
+                                            <option>Groceries</option>
+                                            <option>Presents</option>
+                                            <option>Activities</option>
+                                            <option>Dining Out</option>
+                                            <option>Transport</option>
+                                            <option>Other</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="expense-paid-by">Paid By</label>
+                                        <select id="expense-paid-by" required class="mt-1 w-full p-2 border rounded-md"></select>
+                                    </div>
+                                    <button type="submit" class="w-full px-4 py-2 bg-teal-600 text-white rounded-full">Add Expense</button>
+                                </form>
+                            </div>
+                            <div class="card p-6">
+                                <h3 class="text-xl font-bold mb-4">Expense Log</h3>
+                                <div id="expense-log" class="space-y-3 max-h-96 overflow-y-auto"></div>
+                            </div>
                         </div>
                         <div class="lg:col-span-2 space-y-8">
                             <div class="card p-6">
@@ -130,23 +172,98 @@
     </div>
 
     <!-- Modals -->
-    <div id="edit-task-modal" class="modal hidden"><div class="card p-8 w-full max-w-2xl"><h3 id="edit-modal-title" class="text-2xl font-bold mb-6"></h3><div id="edit-form-content" class="space-y-4"></div><div class="mt-8 flex justify-end space-x-4"><button id="cancel-edit-btn" class="px-6 py-2 bg-slate-200 rounded-full">Cancel</button><button id="save-edit-btn" class="px-6 py-2 bg-teal-600 text-white rounded-full">Save Changes</button></div></div></div>
-    <div id="changelog-modal" class="modal hidden"><div class="card p-8 w-full max-w-3xl"><h3 class="text-2xl font-bold mb-6">Change Log</h3><div id="changelog-log" class="space-y-2 max-h-[70vh] overflow-y-auto"></div><div class="mt-8 text-right"><button id="close-changelog-btn" class="px-6 py-2 bg-teal-600 text-white rounded-full">Close</button></div></div></div>
-    <div id="add-activity-modal" class="modal hidden"><div class="card p-8 w-full max-w-lg"><h3 class="text-2xl font-bold mb-6">Add an Activity</h3><form id="add-activity-form" class="space-y-4">
-        <div><label for="activity-url" class="block text-sm font-medium">Activity URL (optional)</label><input type="url" id="activity-url" placeholder=" https://example.com/activity " class="w-full p-2 border rounded-md"></div>
-        <div><label for="activity-title" class="block text-sm font-medium">Activity Title</label><input type="text" id="activity-title" placeholder="E.g., Disneyland Visit" required class="w-full p-2 border rounded-md"></div>
-        <div><label for="activity-price" class="block text-sm font-medium">Price per Person (€)</label><input type="number" id="activity-price" step="0.01" min="0" placeholder="50.00" required class="w-full p-2 border rounded-md"></div>
-        <div><label for="activity-address" class="block text-sm font-medium">Address</label><input type="text" id="activity-address" placeholder="E.g., Disneyland Paris, France" required class="w-full p-2 border rounded-md"></div>
-        <div><label for="activity-people" class="block text-sm font-medium">Select Participants</label><select id="activity-people" multiple size="6" required class="w-full p-2 border rounded-md"></select></div>
-        <div class="mt-6 flex justify-end space-x-4"><button type="button" id="cancel-activity-btn" class="px-6 py-2 bg-slate-200 rounded-full">Cancel</button><button type="submit" class="px-6 py-2 bg-teal-600 text-white rounded-full">Save Activity</button></div>
-    </form></div></div>
-    <div id="view-activity-modal" class="modal hidden"><div class="card p-0 w-full max-w-3xl max-h-[90vh] overflow-y-auto"><img id="view-activity-img" src="" class="w-full h-64 object-cover" alt="Activity Image"><div class="p-8"><h3 id="view-activity-title" class="text-3xl font-bold mb-4"></h3><p id="view-activity-desc" class="text-slate-600 mb-6"></p><div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center"><div class="bg-slate-100 p-4 rounded-lg"><strong>Price</strong><p id="view-activity-price"></p></div><div class="bg-slate-100 p-4 rounded-lg"><strong>Address</strong><p id="view-activity-address"></p></div><div class="bg-slate-100 p-4 rounded-lg"><strong>Distance</strong><p id="view-activity-distance"></p></div></div><div class="mt-8 text-right"><button id="close-view-activity-btn" class="px-6 py-2 bg-teal-600 text-white rounded-full">Close</button></div></div></div></div>
-    <div id="delete-confirm-modal" class="modal hidden"><div class="card p-8 text-center max-w-md w-full"><h3 class="text-xl font-bold mb-4">Confirm Deletion</h3><p class="text-slate-600 mb-6">Are you sure you want to delete this activity?</p><div class="flex justify-center space-x-4"><button id="cancel-delete-btn" class="px-6 py-2 bg-slate-200 rounded-full">Cancel</button><button id="confirm-delete-btn" class="px-6 py-2 bg-red-600 text-white rounded-full">Delete</button></div></div></div>
+    <div id="edit-task-modal" class="modal hidden">
+        <div class="card p-8 w-full max-w-2xl">
+            <h3 id="edit-modal-title" class="text-2xl font-bold mb-6"></h3>
+            <div id="edit-form-content" class="space-y-4"></div>
+            <div class="mt-8 flex justify-end space-x-4">
+                <button id="cancel-edit-btn" class="px-6 py-2 bg-slate-200 rounded-full">Cancel</button>
+                <button id="save-edit-btn" class="px-6 py-2 bg-teal-600 text-white rounded-full">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="changelog-modal" class="modal hidden">
+        <div class="card p-8 w-full max-w-3xl">
+            <h3 class="text-2xl font-bold mb-6">Change Log</h3>
+            <div id="changelog-log" class="space-y-2 max-h-[70vh] overflow-y-auto"></div>
+            <div class="mt-8 text-right">
+                <button id="close-changelog-btn" class="px-6 py-2 bg-teal-600 text-white rounded-full">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-activity-modal" class="modal hidden">
+        <div class="card p-8 w-full max-w-lg">
+            <h3 class="text-2xl font-bold mb-6">Add an Activity</h3>
+            <form id="add-activity-form" class="space-y-4">
+                <label for="activity-url" class="block text-sm font-medium">Activity URL</label>
+                <input type="url" id="activity-url" placeholder=" https://example.com/activity " required class="w-full p-2 border rounded-md mt-1">
+                <div id="activity-loader" class="hidden mt-4 text-center">Fetching details...</div>
+                <div class="mt-6 flex justify-end space-x-4">
+                    <button type="button" id="cancel-activity-btn" class="px-6 py-2 bg-slate-200 rounded-full">Cancel</button>
+                    <button type="submit" class="px-6 py-2 bg-teal-600 text-white rounded-full">Fetch Details</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="view-activity-modal" class="modal hidden">
+        <div class="card p-0 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <img id="view-activity-img" src="" class="w-full h-64 object-cover" alt="Activity Image">
+            <div class="p-8">
+                <h3 id="view-activity-title" class="text-3xl font-bold mb-4"></h3>
+                <p id="view-activity-desc" class="text-slate-600 mb-6"></p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                    <div class="bg-slate-100 p-4 rounded-lg">
+                        <strong>Price</strong>
+                        <p id="view-activity-price"></p>
+                    </div>
+                    <div class="bg-slate-100 p-4 rounded-lg">
+                        <strong>Address</strong>
+                        <p id="view-activity-address"></p>
+                    </div>
+                    <div class="bg-slate-100 p-4 rounded-lg">
+                        <strong>Distance</strong>
+                        <p id="view-activity-distance"></p>
+                    </div>
+                </div>
+                <div class="mt-8 text-right">
+                    <button id="close-view-activity-btn" class="px-6 py-2 bg-teal-600 text-white rounded-full">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="delete-confirm-modal" class="modal hidden">
+        <div class="card p-8 text-center max-w-md w-full">
+            <h3 class="text-xl font-bold mb-4">Confirm Deletion</h3>
+            <p class="text-slate-600 mb-6">Are you sure you want to delete this activity?</p>
+            <div class="flex justify-center space-x-4">
+                <button id="cancel-delete-btn" class="px-6 py-2 bg-slate-200 rounded-full">Cancel</button>
+                <button id="confirm-delete-btn" class="px-6 py-2 bg-red-600 text-white rounded-full">Delete</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js ";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js ";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js ";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js ";
+
+        // ✅ YOUR FIREBASE CONFIG IS HERE
+        const firebaseConfig = {
+            apiKey: "AIzaSyAGo1LT6jVpvrGT8n63BQcxg01JURsGA_w",
+            authDomain: "familyholidayplanner-1a80f.firebaseapp.com",
+            projectId: "familyholidayplanner-1a80f",
+            storageBucket: "familyholidayplanner-1a80f.firebasestorage.app",
+            messagingSenderId: "865089162879",
+            appId: "1:865089162879:web:ac407bacf75d4ebbb4b94a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
 
         let appData = { schedule: [], expenses: [], history: [], sharedExpenseCategories: ['Groceries', 'Presents'] };
         const family = {
@@ -162,144 +279,40 @@
         };
 
         let currentDayIndex = 0;
-        let db, auth, userId, dataDocRef, currentUserName;
+        let currentUserName;
 
         const el = id => document.getElementById(id);
 
-        async function initFirebase() {
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-holiday-planner';
-            try {
-                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                await new Promise((resolve, reject) => {
-                    onAuthStateChanged(auth, async (user) => {
-                        if (user) { userId = user.uid; resolve(); } 
-                        else {
-                            try {
-                                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
-                                else await signInAnonymously(auth);
-                                resolve();
-                            } catch (error) { reject(error); }
-                        }
-                    });
-                });
-                dataDocRef = doc(db, "artifacts", appId, "public/data/plans", "mainPlan");
-            } catch (error) { console.error("Firebase init failed:", error); }
-        }
-
-        function setupFirestoreListener() {
-            if (!dataDocRef) {
-                el('generate-plan-section').classList.remove('hidden'); return;
-            }
+        async function setupFirestoreListener() {
+            const dataDocRef = doc(db, "plans", "mainPlan");
             onSnapshot(dataDocRef, (docSnap) => {
                 el('main-app-screen').classList.remove('hidden');
-                if (docSnap.exists() && docSnap.data().appData) {
-                    appData = JSON.parse(docSnap.data().appData);
-                    if(!appData.expenses) appData.expenses = [];
-                    if(!appData.history) appData.history = [];
-                    if(!appData.sharedExpenseCategories) appData.sharedExpenseCategories = ['Groceries', 'Presents'];
+                if (docSnap.exists()) {
+                    appData = docSnap.data();
                     el('generate-plan-section').classList.add('hidden');
                     el('planner-content').classList.remove('hidden');
                     initializeAppUI();
-                } else { 
+                } else {
                     el('planner-content').classList.add('hidden');
-                    el('generate-plan-section').classList.remove('hidden'); 
+                    el('generate-plan-section').classList.remove('hidden');
                 }
-            }, (error) => {
-                console.error("Error with Firestore listener:", error);
-                el('planner-content').classList.add('hidden');
-                el('generate-plan-section').classList.remove('hidden');
             });
         }
 
         async function saveDataToFirestore(data) {
-            if (!dataDocRef) return;
-            try { await setDoc(dataDocRef, { appData: JSON.stringify(data) }); } catch (error) { console.error("Error saving data: ", error); }
+            const dataDocRef = doc(db, "plans", "mainPlan");
+            await setDoc(dataDocRef, data);
         }
 
-        function populateActivityParticipants() {
-            const peopleSelect = el('activity-people');
-            peopleSelect.innerHTML = '';
-            [...family.adults, ...family.children].forEach(name => {
-                const option = document.createElement('option');
-                option.value = name;
-                option.textContent = name;
-                peopleSelect.appendChild(option);
-            });
-        }
-
-        function showActivityModal(activity) {
-            el('view-activity-title').textContent = activity.title;
-            el('view-activity-price').textContent = `${activity.pricePerPerson} € / person`;
-            el('view-activity-address').innerHTML = `<a href="${activity.mapLink}" target="_blank">Google Maps</a> | <a href="${activity.wazeLink}" target="_blank">Waze</a>`;
-            el('view-activity-img').src = 'https://via.placeholder.com/800x300.png?text=No+Image';
-            el('view-activity-desc').textContent = activity.url ? `URL: ${activity.url}` : '';
-            el('view-activity-modal').classList.remove('hidden');
-        }
-
-        el('add-activity-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-
-            const title = el('activity-title').value.trim();
-            const price = parseFloat(el('activity-price').value);
-            const address = el('activity-address').value.trim();
-            const url = el('activity-url').value.trim();
-
-            const selectedPeople = Array.from(el('activity-people').selectedOptions).map(opt => opt.value);
-
-            if (!title || isNaN(price) || !address || selectedPeople.length === 0) {
-                alert("Please fill all fields and select at least one person.");
-                return;
+        function generateSchedule(startDate, endDate) {
+            const newSchedule = [];
+            let currentDate = new Date(startDate);
+            const end = new Date(endDate);
+            while(currentDate <= end) {
+                newSchedule.push({ date: currentDate.toISOString().split('T')[0], cooking: [], houseCleaning: '', shopping: [], dressing: [], cleaning: [], notes: "", activities: [] });
+                currentDate.setDate(currentDate.getDate() + 1);
             }
-
-            // Create a unique ID for the activity
-            const activityId = crypto.randomUUID();
-
-            // Create Google Maps/Waze links
-            const mapLink = ` https://www.google.com/maps?q=${encodeURIComponent(address)}`;
-            const wazeLink = ` https://waze.com/ul?place=ChIJ${encodeURIComponent(address)}`;
-
-            // Build activity object
-            const activity = {
-                id: activityId,
-                title,
-                pricePerPerson: price,
-                address,
-                mapLink,
-                wazeLink,
-                participants: selectedPeople,
-                url
-            };
-
-            // Add to current day's activities
-            const localData = JSON.parse(JSON.stringify(appData));
-            localData.schedule[currentDayIndex].activities.push(activity);
-            saveDataToFirestore(localData);
-
-            // Close modal
-            el('add-activity-modal').classList.add('hidden');
-        });
-
-        function createActivityCard(activity) {
-            const card = document.createElement('div');
-            card.className = 'card p-6 flex flex-col items-center text-center relative';
-            card.innerHTML = `
-                <button class="absolute top-2 right-2 text-red-500 hover:text-red-700" data-activity-id="${activity.id}">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
-                </button>
-                <div class="cursor-pointer w-full" data-activity-details='${JSON.stringify(activity)}'>
-                    <div class="text-4xl mb-3">🎉</div>
-                    <h3 class="text-xl font-bold mb-3">Activity</h3>
-                    <p class="text-slate-600">${activity.title}</p>
-                </div>`;
-            card.querySelector('.cursor-pointer').onclick = () => showActivityModal(activity);
-            card.querySelector('button').onclick = (e) => {
-                e.stopPropagation();
-                openDeleteConfirmModal(activity.id);
-            };
-            el('task-grid').appendChild(card);
+            return newSchedule;
         }
 
         function initializeAppUI() {
@@ -307,36 +320,26 @@
             const firstDay = formatDate(appData.schedule[0].date);
             const lastDay = formatDate(appData.schedule[appData.schedule.length - 1].date);
             el('app-dates').textContent = `${firstDay} - ${lastDay}`;
-            populatePersonFilter(); 
+            populatePersonFilter();
             populateExpensePaidBySelect();
-            populateActivityParticipants();
-            if(!el('planner-content').querySelector('.btn-tab.active')) {
-                el('tab-tasks').click();
-            }
             renderAll();
         }
 
         function renderAll() {
             if (!appData.schedule || appData.schedule.length === 0) return;
-            populateDaySelector(); 
-            displayDay(currentDayIndex); 
-            createTaskDistributionChart();
-            displayPersonalTasks(el('person-filter').value);
-            renderCategorySelector();
-            renderExpenseLog(); 
-            renderFinancialAnalysis();
-            if(appData.history && appData.history.length > 0) el('changelog-btn').classList.remove('hidden');
-            else el('changelog-btn').classList.add('hidden');
+            populateDaySelector();
+            displayDay(currentDayIndex);
         }
 
         function populateDaySelector() {
-            const daySelector = el('day-selector'); daySelector.innerHTML = '';
+            const daySelector = el('day-selector'); 
+            daySelector.innerHTML = '';
             appData.schedule.forEach((day, index) => {
                 const btn = document.createElement('button');
                 btn.className = 'btn-day flex-shrink-0 text-sm md:text-base font-semibold py-2 px-4 rounded-full bg-white shadow-sm';
                 if(index === currentDayIndex) btn.classList.add('active');
                 const date = new Date(day.date);
-                btn.innerHTML = `<span class="font-normal text-xs">${date.toLocaleDateString('en-US', {weekday: 'short', timeZone: 'UTC'})}</span> ${date.getUTCDate()}`;
+                btn.innerHTML = `<span class="font-normal text-xs">${date.toLocaleDateString('en-US', { weekday: 'short' })}</span> ${date.getDate()}`;
                 btn.onclick = () => { currentDayIndex = index; renderAll(); };
                 daySelector.appendChild(btn);
             });
@@ -345,149 +348,32 @@
         function displayDay(index) {
             const dayData = appData.schedule[index];
             if (!dayData) return;
-            const titleEl = el('daily-view-title');
-            titleEl.innerHTML = `${formatDate(dayData.date, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
+            el('daily-view-title').innerHTML = formatDate(dayData.date, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             el('task-grid').innerHTML = '';
             const allTasks = { "Cooking": "🍳", "House Cleaning": "🧹", "Shopping": "🛒", "Dressing Table": "🍽️", "Cleaning Table": "🧽" };
             for(const taskName in allTasks){
                 let people = [];
                 switch(taskName) {
                     case "Cooking": people = dayData.cooking; break;
-                    case "House Cleaning": people = dayData.houseCleaning; break;
+                    case "House Cleaning": people = [dayData.houseCleaning]; break;
                     case "Shopping": people = dayData.shopping; break;
                     case "Dressing Table": people = dayData.dressing; break;
                     case "Cleaning Table": people = dayData.cleaning; break;
                 }
                 createTaskCard(taskName, people, allTasks[taskName]);
             }
-
-            // Render activities
-            if(dayData.activities && dayData.activities.length > 0) {
-                dayData.activities.forEach(activity => createActivityCard(activity));
-            }
         }
 
         function createTaskCard(title, people, icon) {
             const personArray = Array.isArray(people) ? people : (people ? [people] : []);
-            const card = document.createElement('div'); card.className = 'card p-6 flex flex-col items-center text-center';
-            let peopleHTML = personArray.map(p => `<span class="person-badge"><span class="person-color-dot" style="background-color: ${personColors[p] || '#d1d5db'}"></span>${p}</span>`).join('');
-            if(personArray.length === 0 || !personArray[0]){
+            const card = document.createElement('div');
+            card.className = 'card p-6 flex flex-col items-center text-center';
+            let peopleHTML = personArray.map(p => `<span class="person-badge"><span class="person-color-dot" style="background-color:${personColors[p] || '#d1d5db'}"></span>${p}</span>`).join('');
+            if(personArray.length === 0 || !personArray[0]) {
                 peopleHTML = '<span class="text-slate-500">No one assigned</span>';
             }
             card.innerHTML = `<div class="text-4xl mb-3">${icon}</div><h3 class="text-xl font-bold mb-3">${title}</h3><div class="flex flex-wrap justify-center">${peopleHTML}</div>`;
             el('task-grid').appendChild(card);
-        }
-
-        function openDeleteConfirmModal(activityId) {
-            const modal = el('delete-confirm-modal');
-            modal.classList.remove('hidden');
-            el('confirm-delete-btn').onclick = () => {
-                deleteActivity(activityId);
-                modal.classList.add('hidden');
-            };
-        }
-
-        async function deleteActivity(activityId) {
-            const localData = JSON.parse(JSON.stringify(appData));
-            const day = localData.schedule[currentDayIndex];
-            if(day && day.activities) {
-                day.activities = day.activities.filter(a => a.id !== activityId);
-            }
-            await saveDataToFirestore(localData);
-        }
-
-        // --- Event Listeners & Main App Start ---
-        document.addEventListener('DOMContentLoaded', async () => {
-            await initFirebase();
-            currentUserName = localStorage.getItem('holidayPlannerUser');
-            if (currentUserName) {
-                el('user-display').textContent = `User: ${currentUserName}`;
-                setupFirestoreListener();
-            } else {
-                el('welcome-modal').classList.remove('hidden');
-            }
-        });
-
-        el('welcome-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            currentUserName = el('user-name-input').value;
-            localStorage.setItem('holidayPlannerUser', currentUserName);
-            el('welcome-modal').classList.add('hidden');
-            el('user-display').textContent = `User: ${currentUserName}`;
-            setupFirestoreListener();
-        });
-
-        el('generate-schedule-btn').addEventListener('click', async () => {
-            const start = el('start-date').value, end = el('end-date').value;
-            if (!start || !end || new Date(start) > new Date(end)) {
-                 el('date-error').textContent = 'Please enter a valid date range.'; return;
-            }
-            el('date-error').textContent = '';
-            const newAppData = { schedule: generateSchedule(start, end), expenses: [], history: [], sharedExpenseCategories: ['Groceries', 'Presents'] };
-            await saveDataToFirestore(newAppData);
-        });
-
-        el('tab-tasks').addEventListener('click', (e) => { 
-            e.target.classList.add('active', 'border-teal-500'); 
-            el('tab-expenses').classList.remove('active', 'border-teal-500'); 
-            el('content-tasks').classList.remove('hidden'); 
-            el('content-expenses').classList.add('hidden'); 
-        });
-
-        el('tab-expenses').addEventListener('click', (e) => { 
-            e.target.classList.add('active', 'border-teal-500'); 
-            el('tab-tasks').classList.remove('active', 'border-teal-500'); 
-            el('content-expenses').classList.remove('hidden'); 
-            el('content-tasks').classList.add('hidden'); 
-        });
-
-        el('add-activity-btn').addEventListener('click', () => {
-            el('add-activity-modal').classList.remove('hidden');
-        });
-
-        el('cancel-activity-btn').addEventListener('click', () => {
-            el('add-activity-modal').classList.add('hidden');
-        });
-
-        // Helper functions
-        function generateSchedule(startDate, endDate) {
-            const newSchedule = []; let currentDate = new Date(startDate); const end = new Date(endDate);
-            const taskCounts = [...family.adults, ...family.taskableChildren].reduce((acc, p) => ({...acc, [p]: 0}), {});
-            const getLeastBusy = (people) => [...people].sort((a,b) => taskCounts[a] - taskCounts[b]);
-            const eligibleCooks = family.adults.filter(p => p !== 'Mathilde');
-            const eligibleShoppers = family.adults.filter(p => p !== 'Mathilde' && p !== 'Marie' && p !== 'Ankie');
-            while(currentDate <= end) {
-                const utcDate = new Date(Date.UTC(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()));
-                const day = { date: utcDate.toISOString().split('T')[0], day: utcDate.toLocaleDateString('en-US', {weekday: 'long', timeZone: 'UTC'}), cooking: [], dressing: [], cleaning: [], houseCleaning: '', shopping:[], notes:"", activities: [] };
-                let availableAdultsThisDay = [...family.adults];
-                let availableChildrenThisDay = [...family.taskableChildren];
-                const assign = (people, count) => {
-                    const assigned = [];
-                    const leastBusy = getLeastBusy(people);
-                    for (const person of leastBusy) {
-                        if (assigned.length >= count) break;
-                        const isAdult = family.adults.includes(person);
-                        const isChild = family.taskableChildren.includes(person);
-                        if (isAdult && availableAdultsThisDay.includes(person)) {
-                            assigned.push(person);
-                            taskCounts[person]++;
-                            availableAdultsThisDay.splice(availableAdultsThisDay.indexOf(person), 1);
-                        } else if (isChild && availableChildrenThisDay.includes(person)) {
-                            assigned.push(person);
-                            taskCounts[person]++;
-                            availableChildrenThisDay.splice(availableChildrenThisDay.indexOf(person), 1);
-                        }
-                    }
-                    return assigned;
-                };
-                day.cooking = assign(eligibleCooks, 2);
-                day.houseCleaning = assign(availableAdultsThisDay, 1)[0] || '';
-                if(newSchedule.length % 2 === 0) day.shopping = assign(eligibleShoppers, 2);
-                day.dressing = assign(family.taskableChildren, 2);
-                day.cleaning = assign(availableChildrenThisDay, 2);
-                newSchedule.push(day); currentDate.setDate(currentDate.getDate() + 1);
-            }
-            return newSchedule;
         }
 
         function populatePersonFilter() {
@@ -499,17 +385,8 @@
         function populateExpensePaidBySelect() {
             const expensePaidBySelect = el('expense-paid-by');
             expensePaidBySelect.innerHTML = '';
-            family.adults.forEach(p => expensePaidBySelect.add(new Option(p,p)));
+            family.adults.forEach(p => expensePaidBySelect.add(new Option(p, p)));
         }
-
-        function displayPersonalTasks(person) { /* Unchanged */ }
-        function renderExpenseLog() { /* Unchanged */ }
-        function createTaskDistributionChart() { /* Unchanged */ }
-        function renderCategorySelector() { /* Unchanged */ }
-        function renderFinancialAnalysis() { /* Unchanged */ }
-
-        function updateChart(canvasId, type, labels, data, backgroundColors) { /* Unchanged */ }
-        function generateSettlementPlan(balances) { /* Unchanged */ }
 
         function formatDate(dateString, options = {}) {
             const date = new Date(dateString);
@@ -517,11 +394,97 @@
             return new Intl.DateTimeFormat('fr-FR', defaultOptions).format(date);
         }
 
-        function formatDateTime(dateString) {
-            const date = new Date(dateString);
-            const options = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' };
-            return new Intl.DateTimeFormat('fr-FR', options).format(date).replace(',', ' at');
-        }
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', async () => {
+            onAuthStateChanged(auth, async (user) => {
+                if (!user) await signInAnonymously(auth);
+                currentUserName = localStorage.getItem('holidayPlannerUser') || 'Guest';
+                el('user-display').textContent = `User: ${currentUserName}`;
+                setupFirestoreListener();
+            });
+        });
+
+        el('welcome-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            currentUserName = el('user-name-input').value;
+            localStorage.setItem('holidayPlannerUser', currentUserName);
+            el('user-display').textContent = `User: ${currentUserName}`;
+            el('welcome-modal').classList.add('hidden');
+            setupFirestoreListener();
+        });
+
+        el('generate-schedule-btn').addEventListener('click', async () => {
+            const start = el('start-date').value;
+            const end = el('end-date').value;
+            if (!start || !end || new Date(start) > new Date(end)) {
+                el('date-error').textContent = 'Please enter a valid date range.';
+                return;
+            }
+            const newAppData = { schedule: generateSchedule(start, end), expenses: [], history: [], sharedExpenseCategories: ['Groceries', 'Presents'] };
+            await saveDataToFirestore(newAppData);
+        });
+
+        el('tab-tasks').addEventListener('click', () => {
+            el('tab-tasks').classList.add('active');
+            el('tab-expenses').classList.remove('active');
+            el('content-tasks').classList.remove('hidden');
+            el('content-expenses').classList.add('hidden');
+        });
+
+        el('tab-expenses').addEventListener('click', () => {
+            el('tab-expenses').classList.add('active');
+            el('tab-tasks').classList.remove('active');
+            el('content-expenses').classList.remove('hidden');
+            el('content-tasks').classList.add('hidden');
+        });
+
+        el('add-activity-btn').addEventListener('click', () => {
+            el('add-activity-modal').classList.remove('hidden');
+        });
+
+        el('cancel-activity-btn').addEventListener('click', () => {
+            el('add-activity-modal').classList.add('hidden');
+        });
+
+        el('add-activity-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            alert("Manual activity input is not yet implemented.");
+        });
+
+        el('expense-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const localData = JSON.parse(JSON.stringify(appData));
+            localData.expenses.push({
+                id: crypto.randomUUID(),
+                description: el('expense-desc').value,
+                amount: parseFloat(el('expense-amount').value),
+                category: el('expense-category').value,
+                paidBy: el('expense-paid-by').value
+            });
+            await saveDataToFirestore(localData);
+            el('expense-form').reset();
+        });
+
+        el('changelog-btn').addEventListener('click', () => {
+            el('changelog-modal').classList.remove('hidden');
+        });
+
+        el('close-changelog-btn').addEventListener('click', () => {
+            el('changelog-modal').classList.add('hidden');
+        });
+
+        // Initialize Firebase Auth
+        const { getAuth, signInAnonymously, onAuthStateChanged } = require("firebase/auth");
+
+        const auth = getAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                signInAnonymously(auth)
+                    .then(() => console.log("Signed in anonymously"))
+                    .catch((error) => console.error("Anonymous sign-in failed:", error));
+            }
+        });
     </script>
 </body>
 </html>
